@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Optional autoload: copy this file + the Contents folder into
+     %APPDATA%\Autodesk\ApplicationPlugins\WS.BoltTool.bundle\
+     Contents\WS.BoltTool.dll  (the built DLL) -->
+<ApplicationPackage SchemaVersion="1.0" AppVersion="1.0.0" Name="Wind-Smile Bolt Tool"
+    Description="Bolt, nut and washer block generator with torque calculator" Author="Wind-Smile"
+    ProductCode="{6C1B6E57-3D0F-4B8E-9A4D-2B7F5C0E9A11}" UpgradeCode="{0F3A9B2C-7E61-4D57-8C2B-91A4E6D3F702}">
+  <CompanyDetails Name="Wind-Smile" />
+  <Components>
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD*" SeriesMin="R25.0" />
+    <ComponentEntry AppName="WS.BoltTool" ModuleName="./Contents/WS.BoltTool.dll" LoadOnAutoCADStartup="True">
+      <Commands GroupName="WSBOLT">
+        <Command Local="BOLTTOOL" Global="BOLTTOOL" />
+        <Command Local="BOLTEDIT" Global="BOLTEDIT" />
+        <Command Local="BOLTTORQUE" Global="BOLTTORQUE" />
+      </Commands>
+    </ComponentEntry>
+  </Components>
+</ApplicationPackage>
