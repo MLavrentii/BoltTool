@@ -2,9 +2,9 @@ using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
-using WS.BoltTool.Data;
+using BoltToolApp.Data;
 
-namespace WS.BoltTool.UI
+namespace BoltToolApp.UI
 {
     /// <summary>Small schematic of the selected part that shows what each dimension letter means.</summary>
     public class LegendControl : FrameworkElement

@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using WS.BoltTool.Data;
+using BoltToolApp.Data;
 
-namespace WS.BoltTool.Geometry
+namespace BoltToolApp.Geometry
 {
     /// <summary>A part placed along the common axis (+X). X is the position of the part's local x = 0.</summary>
     public class PlacedPart

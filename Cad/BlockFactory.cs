@@ -6,13 +6,13 @@ using System.Text;
 using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
-using WS.BoltTool.Data;
-using WS.BoltTool.Geometry;
-using LineStyle = WS.BoltTool.Geometry.LineStyle;
-using Mesh = WS.BoltTool.Geometry.Mesh;
-using Layout = WS.BoltTool.Geometry.Layout;
+using BoltToolApp.Data;
+using BoltToolApp.Geometry;
+using LineStyle = BoltToolApp.Geometry.LineStyle;
+using Mesh = BoltToolApp.Geometry.Mesh;
+using Layout = BoltToolApp.Geometry.Layout;
 
-namespace WS.BoltTool.Cad
+namespace BoltToolApp.Cad
 {
     /// <summary>Creates (or reuses) block definitions for a job and computes the positions of linked parts.</summary>
     public static class BlockFactory
@@ -84,8 +84,8 @@ namespace WS.BoltTool.Cad
             string std = job.Standard.ToString();
             string sizeTxt = PartKindInfo.HasLength(main.Kind) ? $"{job.Size}x{Fmt(main.Length)}" : job.Size;
             string prefix = role == RoleAssembly
-                ? $"WS_{std}_ASM_{job.Size}x{Fmt(lay.BoltLength)}_C{Fmt(job.ClampLength)}"
-                : $"WS_{std}_{PartKindInfo.Code(main.Kind)}_{sizeTxt}";
+                ? $"BT_{std}_ASM_{job.Size}x{Fmt(lay.BoltLength)}_C{Fmt(job.ClampLength)}"
+                : $"BT_{std}_{PartKindInfo.Code(main.Kind)}_{sizeTxt}";
             string geomKey = string.Join("|", "v3", std, job.Size, role,
                 string.Join(";", parts.Select(p => $"{p.Kind}:{Fmt(p.X - baseX)}:{Fmt(p.Length)}")),
                 job.Thread, Fmt(job.Azimuth), Fmt(job.Elevation), Fmt(job.Spin), job.HiddenLines, job.Output,
@@ -96,7 +96,7 @@ namespace WS.BoltTool.Cad
             if (bt.Has(name)) return bt[name];
 
             var btr = new BlockTableRecord { Name = name, Origin = Point3d.Origin };
-            btr.Comments = $"{PartKindInfo.Designation(main.Kind, job.Standard)} {sizeTxt} – Wind-Smile Bolt Tool";
+            btr.Comments = $"{PartKindInfo.Designation(main.Kind, job.Standard)} {sizeTxt} – Bolt Tool";
             bt.UpgradeOpen();
             var id = bt.Add(btr);
             tr.AddNewlyCreatedDBObject(btr, true);

@@ -6,9 +6,9 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using WS.BoltTool.Geometry;
+using BoltToolApp.Geometry;
 
-namespace WS.BoltTool.UI
+namespace BoltToolApp.UI
 {
     /// <summary>
     /// Live hidden-line preview. Left-drag rotates the view directly, the round joystick in the corner

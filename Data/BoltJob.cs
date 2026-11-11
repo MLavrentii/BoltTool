@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace WS.BoltTool.Data
+namespace BoltToolApp.Data
 {
     public enum ThreadStyle { None, Simplified, Detailed }
     public enum OutputMode { View2D, Mesh3D, Solid3D }

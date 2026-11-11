@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace WS.BoltTool.Geometry
+namespace BoltToolApp.Geometry
 {
     public readonly struct Vec3
     {

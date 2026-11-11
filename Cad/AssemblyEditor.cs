@@ -6,10 +6,10 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.GraphicsInterface;
-using WS.BoltTool.Data;
-using WS.BoltTool.Geometry;
+using BoltToolApp.Data;
+using BoltToolApp.Geometry;
 
-namespace WS.BoltTool.Cad
+namespace BoltToolApp.Cad
 {
     public static class AssemblyEditor
     {

@@ -6,11 +6,11 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.GraphicsInterface;
 using Autodesk.AutoCAD.Runtime;
-using WS.BoltTool.Data;
-using WS.BoltTool.Geometry;
+using BoltToolApp.Data;
+using BoltToolApp.Geometry;
 using AcApp = Autodesk.AutoCAD.ApplicationServices.Core.Application;
 
-namespace WS.BoltTool.Cad
+namespace BoltToolApp.Cad
 {
     /// <summary>
     /// "Dynamic block" behaviour without authoring dynamic blocks: every Bolt Tool block reference gets

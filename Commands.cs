@@ -3,15 +3,15 @@ using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
-using WS.BoltTool.Cad;
-using WS.BoltTool.Data;
-using WS.BoltTool.UI;
+using BoltToolApp.Cad;
+using BoltToolApp.Data;
+using BoltToolApp.UI;
 using AcApp = Autodesk.AutoCAD.ApplicationServices.Application;
 
-[assembly: ExtensionApplication(typeof(WS.BoltTool.Plugin))]
-[assembly: CommandClass(typeof(WS.BoltTool.Commands))]
+[assembly: ExtensionApplication(typeof(BoltToolApp.Plugin))]
+[assembly: CommandClass(typeof(BoltToolApp.Commands))]
 
-namespace WS.BoltTool
+namespace BoltToolApp
 {
     public class Plugin : IExtensionApplication
     {
@@ -22,7 +22,7 @@ namespace WS.BoltTool
                 LengthGripOverrule.Register();
                 RibbonUi.Create();
                 AcApp.DocumentManager.MdiActiveDocument?.Editor.WriteMessage(
-                    "\nWind-Smile Bolt Tool loaded. Commands: BOLTTOOL (window), BOLTEDIT (edit a bolt block), BOLTTORQUE (torque calculator).");
+                    "\nBolt Tool loaded. Commands: BOLTTOOL (window), BOLTEDIT (edit a bolt block), BOLTTORQUE (torque calculator).");
             }
             catch (System.Exception ex)
             {
@@ -54,14 +54,14 @@ namespace WS.BoltTool
             return _window;
         }
 
-        [CommandMethod("WSBOLT", "BOLTTOOL", CommandFlags.Modal)]
+        [CommandMethod("BTOOL", "BOLTTOOL", CommandFlags.Modal)]
         public void BoltTool() => ShowWindow();
 
-        [CommandMethod("WSBOLT", "BOLTTORQUE", CommandFlags.Modal)]
+        [CommandMethod("BTOOL", "BOLTTORQUE", CommandFlags.Modal)]
         public void BoltTorque() => ShowWindow(3);
 
         /// <summary>Select a Bolt Tool block and load its parameters into the window for editing.</summary>
-        [CommandMethod("WSBOLT", "BOLTEDIT", CommandFlags.Modal | CommandFlags.UsePickSet)]
+        [CommandMethod("BTOOL", "BOLTEDIT", CommandFlags.Modal | CommandFlags.UsePickSet)]
         public void BoltEdit()
         {
             var doc = AcApp.DocumentManager.MdiActiveDocument; var ed = doc.Editor;
@@ -88,7 +88,7 @@ namespace WS.BoltTool
 
         // ---------- internal commands started from the window (command context = safe document access)
 
-        [CommandMethod("WSBOLT", "WS_BOLTINSERT", CommandFlags.Modal | CommandFlags.NoHistory)]
+        [CommandMethod("BTOOL", "BT_BOLTINSERT", CommandFlags.Modal | CommandFlags.NoHistory)]
         public void InsertPending()
         {
             var job = PendingJob; PendingJob = null;
@@ -98,7 +98,7 @@ namespace WS.BoltTool
             catch (System.Exception ex) { doc.Editor.WriteMessage($"\nBoltTool error: {ex.Message}"); }
         }
 
-        [CommandMethod("WSBOLT", "WS_BOLTMAKE", CommandFlags.Modal | CommandFlags.NoHistory)]
+        [CommandMethod("BTOOL", "BT_BOLTMAKE", CommandFlags.Modal | CommandFlags.NoHistory)]
         public void MakePending()
         {
             var job = PendingJob; PendingJob = null;
@@ -112,7 +112,7 @@ namespace WS.BoltTool
             catch (System.Exception ex) { doc.Editor.WriteMessage($"\nBoltTool error: {ex.Message}"); }
         }
 
-        [CommandMethod("WSBOLT", "WS_BOLTUPDATE", CommandFlags.Modal | CommandFlags.NoHistory)]
+        [CommandMethod("BTOOL", "BT_BOLTUPDATE", CommandFlags.Modal | CommandFlags.NoHistory)]
         public void UpdatePending()
         {
             var job = PendingJob; var id = PendingTarget;

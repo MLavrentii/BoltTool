@@ -1,17 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    Wind-Smile Bolt Tool for AutoCAD 2027 (.NET 10).
+    Bolt Tool for AutoCAD 2027 (.NET 10).
     Build:  dotnet build -c Release            (uses AutoCAD 2027 install path below)
             dotnet build -c Release -p:AcadDir="D:\Autodesk\AutoCAD 2027"
-    Load in AutoCAD with NETLOAD -> bin\Release\net10.0-windows\WS.BoltTool.dll
+    Load in AutoCAD with NETLOAD -> bin\Release\net10.0-windows\BoltTool.dll
   -->
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
-    <AssemblyName>WS.BoltTool</AssemblyName>
-    <RootNamespace>WS.BoltTool</RootNamespace>
+    <AssemblyName>BoltTool</AssemblyName>
+    <RootNamespace>BoltToolApp</RootNamespace>
     <PlatformTarget>x64</PlatformTarget>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>

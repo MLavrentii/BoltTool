@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text.Json;
 
-namespace WS.BoltTool.Data
+namespace BoltToolApp.Data
 {
     /// <summary>Remembers the last used job between sessions and lets the user change default lengths.</summary>
     /// <summary>Window state remembered between sessions (not part of a block's parameters).</summary>

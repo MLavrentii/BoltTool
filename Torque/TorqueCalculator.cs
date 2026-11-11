@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WS.BoltTool.Data;
+using BoltToolApp.Data;
 
-namespace WS.BoltTool.Torque
+namespace BoltToolApp.Torque
 {
     public record StrengthClass(string Name, double RpSmall, double RpLarge, string Note)
     {

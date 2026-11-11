@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace WS.BoltTool.Data
+namespace BoltToolApp.Data
 {
     public enum FastenerStandard { ISO, JIS }
 
@@ -83,7 +83,7 @@ namespace WS.BoltTool.Data
     }
 
     /// <summary>All dimensions in mm for one nominal size. Values are typical catalogue values –
-    /// they are written to %AppData%\WindSmile\BoltTool\standard_*.json so they can be checked/edited.</summary>
+    /// they are written to %AppData%\BoltTool\standard_*.json so they can be checked/edited.</summary>
     public class SizeRow
     {
         public string Size { get; set; }          // "M12"
@@ -149,7 +149,7 @@ namespace WS.BoltTool.Data
         {
             get
             {
-                var p = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WindSmile", "BoltTool");
+                var p = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "BoltTool");
                 Directory.CreateDirectory(p);
                 return p;
             }

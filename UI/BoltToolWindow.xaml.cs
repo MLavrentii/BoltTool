@@ -8,13 +8,13 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using ObjectId = Autodesk.AutoCAD.DatabaseServices.ObjectId;
-using WS.BoltTool.Cad;
-using WS.BoltTool.Data;
-using WS.BoltTool.Geometry;
-using WS.BoltTool.Torque;
+using BoltToolApp.Cad;
+using BoltToolApp.Data;
+using BoltToolApp.Geometry;
+using BoltToolApp.Torque;
 using AcApp = Autodesk.AutoCAD.ApplicationServices.Application;
 
-namespace WS.BoltTool.UI
+namespace BoltToolApp.UI
 {
     public partial class BoltToolWindow : Window
     {
@@ -522,20 +522,20 @@ namespace WS.BoltTool.UI
         {
             if (!Validate()) return;
             Status("Pick the insertion point in the drawing…");
-            Commands.Run("WS_BOLTINSERT", _job);
+            Commands.Run("BT_BOLTINSERT", _job);
         }
 
         void OnMake(object sender, RoutedEventArgs e)
         {
             if (!Validate()) return;
-            Commands.Run("WS_BOLTMAKE", _job);
+            Commands.Run("BT_BOLTMAKE", _job);
             Status("Block definition created – see the command line for its name.");
         }
 
         void OnUpdate(object sender, RoutedEventArgs e)
         {
             if (_editId.IsNull || !Validate()) return;
-            Commands.Run("WS_BOLTUPDATE", _job, _editId);
+            Commands.Run("BT_BOLTUPDATE", _job, _editId);
             Status("Block updated.");
         }
 

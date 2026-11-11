@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace WS.BoltTool.UI
+namespace BoltToolApp.UI
 {
     /// <summary>
     /// English / Japanese UI texts. English strings are the keys; anything without a Japanese entry stays English.
@@ -136,7 +136,6 @@ namespace WS.BoltTool.UI
         static readonly Dictionary<string, string> J = new()
         {
             // window, header, buttons
-            ["Bolt Tool – Wind-Smile"] = "ボルトツール – Wind-Smile",
             ["Bolt Tool"] = "ボルトツール",
             ["Bolts · nuts · washers → blocks"] = "ボルト・ナット・座金 → ブロック",
             ["Editing a placed block – press “Update selected block”"] = "配置済みブロックを編集中 –「選択ブロックを更新」を押してください",

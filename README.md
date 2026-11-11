@@ -1,4 +1,4 @@
-# Wind-Smile Bolt Tool – AutoCAD 2027 (.NET 10)
+# Bolt Tool – AutoCAD 2027 (.NET 10)
 
 ![Bolt Tool window](docs/screenshot.png)
 
@@ -35,11 +35,11 @@ or a 3D mesh / solid, with wipeouts, stretch grips for length, and a tightening-
 1. Run `build.bat`. If AutoCAD is not in `C:\Program Files\Autodesk\AutoCAD 2027`, pass its folder:
    `build.bat "D:\Autodesk\AutoCAD 2027"`.
 2. Either load it once by hand – in AutoCAD type `NETLOAD` and pick
-   `bin\Release\net10.0-windows\WS.BoltTool.dll` –
+   `bin\Release\net10.0-windows\BoltTool.dll` –
    or make it load at every start: close AutoCAD and run `install.bat`.
 
 `install.bat` copies the DLL and `PackageContents.xml` to
-`%APPDATA%\Autodesk\ApplicationPlugins\WS.BoltTool.bundle\`. `uninstall.bat` removes that folder.
+`%APPDATA%\Autodesk\ApplicationPlugins\BoltTool.bundle\`. `uninstall.bat` removes that folder.
 
 **Updating after a code change**
 
@@ -58,7 +58,7 @@ or a 3D mesh / solid, with wipeouts, stretch grips for length, and a tightening-
 
 ## Commands
 
-All three are also buttons on the **Wind-Smile** ribbon tab, which is added when the plugin loads.
+All three are also buttons on the **Bolt Tool** ribbon tab, which is added when the plugin loads.
 
 | Command | Ribbon button | What it does |
 |---|---|---|
@@ -202,7 +202,7 @@ For a linked set (separate blocks), editing or stretching one part updates the o
   first, then washers and nuts, so their wipeouts cover the shank.
 - 2D output is cleaned before it is written: overlapping and duplicate lines are merged (like `OVERKILL`).
 - Hide wipeout frames with `WIPEOUTFRAME 0`; `WIPEOUTFRAME 2` shows them on screen but does not plot them.
-- Block names look like `WS_ISO_HB_M12x40_SIDE_A1B2C3D4`; identical settings reuse the same definition.
+- Block names look like `BT_ISO_HB_M12x40_SIDE_A1B2C3D4`; identical settings reuse the same definition.
 
 ## Torque calculator
 
@@ -219,7 +219,7 @@ Method: simplified VDI 2230-1 –
 
 ## Settings and data files
 
-Everything is stored in `%APPDATA%\WindSmile\BoltTool\`:
+Everything is stored in `%APPDATA%\BoltTool\`:
 
 | File | Content |
 |---|---|

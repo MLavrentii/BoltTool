@@ -6,12 +6,12 @@ using System.Windows.Media.Imaging;
 using Autodesk.Windows;
 using AcApp = Autodesk.AutoCAD.ApplicationServices.Application;
 
-namespace WS.BoltTool.UI
+namespace BoltToolApp.UI
 {
-    /// <summary>Adds a "Wind-Smile" ribbon tab with buttons for the Bolt Tool commands.</summary>
+    /// <summary>Adds a "Bolt Tool" ribbon tab with buttons for the Bolt Tool commands.</summary>
     public static class RibbonUi
     {
-        const string TabId = "WS_BOLTTOOL_TAB";
+        const string TabId = "BT_BOLTTOOL_TAB";
 
         public static void Create()
         {
@@ -32,7 +32,7 @@ namespace WS.BoltTool.UI
             {
                 var ribbon = ComponentManager.Ribbon;
                 if (ribbon.FindTab(TabId) != null) return;
-                var tab = new RibbonTab { Title = "Wind-Smile", Id = TabId };
+                var tab = new RibbonTab { Title = "Bolt Tool", Id = TabId };
                 var src = new RibbonPanelSource { Title = "Bolt Tool" };
                 src.Items.Add(Button("Bolt Tool", "BOLTTOOL", "Create bolt, nut and washer blocks", "B"));
                 src.Items.Add(Button("Edit Bolt", "BOLTEDIT", "Edit a placed Bolt Tool block", "E"));
@@ -45,7 +45,7 @@ namespace WS.BoltTool.UI
 
         static RibbonButton Button(string text, string command, string tip, string letter) => new RibbonButton
         {
-            Text = text, Id = "WS_" + command, ShowText = true, ShowImage = true,
+            Text = text, Id = "BT_" + command, ShowText = true, ShowImage = true,
             Size = RibbonItemSize.Large, Orientation = System.Windows.Controls.Orientation.Vertical,
             LargeImage = Icon(letter, 32), Image = Icon(letter, 16),
             ToolTip = tip, CommandParameter = command, CommandHandler = new Handler()

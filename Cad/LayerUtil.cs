@@ -4,9 +4,9 @@ using System.Text;
 using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Runtime;
-using WS.BoltTool.Data;
+using BoltToolApp.Data;
 
-namespace WS.BoltTool.Cad
+namespace BoltToolApp.Cad
 {
     public static class LayerUtil
     {
@@ -72,7 +72,7 @@ namespace WS.BoltTool.Cad
     /// <summary>Stores the job JSON on block references so they can be edited / stretched later.</summary>
     public static class XDataUtil
     {
-        public const string App = "WS_BOLTTOOL";
+        public const string App = "BT_BOLTTOOL";
 
         public static void Write(DBObject obj, BoltJob job, Transaction tr)
         {
