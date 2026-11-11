@@ -190,7 +190,7 @@ namespace WS.BoltTool.UI
 
             Text(dc, Caption, new Point(14, 10), Muted, 12);
             if (ShowPartHint)
-                Text(dc, Loc.T("Ctrl+click = select a part · Ctrl+drag = move it along the bolt · click the distance to type a value"), new Point(14, 30), Muted, 11);
+                Text(dc, Loc.T("Ctrl+click = select a part · Ctrl+drag = move it along the bolt · click the distance to type a value · Esc = unselect"), new Point(14, 30), Muted, 11);
             Text(dc, Loc.T("Drag = rotate · Arrow keys = 1° (Shift 15°, Ctrl 0.1°) · Wheel = zoom · Right-drag = pan · Double-click = fit · Ctrl+Z = undo"), new Point(14, ActualHeight - 24), Muted, 11);
 
             // joystick

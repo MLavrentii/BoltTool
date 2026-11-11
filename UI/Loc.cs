@@ -308,12 +308,15 @@ namespace WS.BoltTool.UI
 
             // moving parts, view snap
             ["Snap to standard view angles while orbiting"] = "回転時に標準の視点角度へスナップ",
+            ["Snap view angles"] = "視点角度スナップ",
+            ["Hex spin 0° shows the hex across corners, 30° across flats. View presets and angle snapping are in the bar under the preview."] =
+                "六角の回転 0° は対角、30° は二面幅が見える向きです。視点プリセットと角度スナップはプレビュー下のバーにあります。",
             ["Part positions"] = "部品の位置",
             ["Reset part positions"] = "部品位置をリセット",
             ["In the preview, hold Ctrl and drag a washer or nut to move it along the bolt. Ctrl+click several parts to move them together. The red number is the distance from the bolt head – click it to type an exact value."] =
                 "プレビュー上で Ctrl を押しながら座金やナットをドラッグすると、ボルトに沿って移動できます。Ctrl+クリックで複数選択すると一緒に動きます。赤い数値はボルト頭からの距離で、クリックすると正確な値を入力できます。",
-            ["Ctrl+click = select a part · Ctrl+drag = move it along the bolt · click the distance to type a value"] =
-                "Ctrl+クリック = 部品を選択 · Ctrl+ドラッグ = ボルトに沿って移動 · 距離をクリックして数値入力",
+            ["Ctrl+click = select a part · Ctrl+drag = move it along the bolt · click the distance to type a value · Esc = unselect"] =
+                "Ctrl+クリック = 部品を選択 · Ctrl+ドラッグ = ボルトに沿って移動 · 距離をクリックして数値入力 · Esc = 選択解除",
             ["While you orbit with the mouse or joystick, the view catches on side / end / top views and on 30°, 35.26° (isometric), 45° and 60°. Arrow keys never snap."] =
                 "マウスやジョイスティックで回転するとき、側面・端面・上面と 30°・35.26° (アイソメ)・45°・60° に吸着します。矢印キーはスナップしません。",
             ["Put every washer and nut back to its normal stacked position."] = "すべての座金とナットを通常の重ね位置に戻します。",

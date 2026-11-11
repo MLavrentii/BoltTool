@@ -338,17 +338,6 @@
                                 </StackPanel>
 
                                 <TextBlock Text="View direction" Style="{StaticResource Section}"/>
-                                <WrapPanel Margin="0,8,0,0">
-                                    <Button Style="{StaticResource Chip}" Content="Side" Tag="0,0" Click="OnPreset"/>
-                                    <Button Style="{StaticResource Chip}" Content="Head end" Tag="90,0" Click="OnPreset"/>
-                                    <Button Style="{StaticResource Chip}" Content="Thread end" Tag="-90,0" Click="OnPreset"/>
-                                    <Button Style="{StaticResource Chip}" Content="Top" Tag="0,90" Click="OnPreset"/>
-                                    <Button Style="{StaticResource Chip}" Content="Iso SW" Tag="-45,35.264" Click="OnPreset"/>
-                                    <Button Style="{StaticResource Chip}" Content="Iso SE" Tag="45,35.264" Click="OnPreset"/>
-                                    <Button Style="{StaticResource Chip}" Content="Iso NE" Tag="135,35.264" Click="OnPreset"/>
-                                    <Button Style="{StaticResource Chip}" Content="Iso NW" Tag="-135,35.264" Click="OnPreset"/>
-                                </WrapPanel>
-
                                 <Grid Margin="0,6,0,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="90"/>
@@ -370,8 +359,7 @@
                                     <Slider x:Name="SpinSlider" Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="60" VerticalAlignment="Center" Margin="0,0,8,0" ValueChanged="OnSlider"/>
                                     <TextBox x:Name="SpinBox" Grid.Row="2" Grid.Column="2" LostFocus="OnAngleBox" KeyDown="OnEnterKey"/>
                                 </Grid>
-                                <TextBlock Style="{StaticResource Hint}" Text="Hex spin 0° shows the hex across corners, 30° across flats. You can also orbit in the preview with the mouse or the joystick."/>
-                                <CheckBox x:Name="ViewSnapCheck" Content="Snap to standard view angles while orbiting" Checked="OnChanged" Unchecked="OnChanged"/>
+                                <TextBlock Style="{StaticResource Hint}" Text="Hex spin 0° shows the hex across corners, 30° across flats. View presets and angle snapping are in the bar under the preview."/>
                                 <CheckBox x:Name="HiddenCheck" Content="Show hidden lines (HIDDEN linetype)" Checked="OnChanged" Unchecked="OnChanged"/>
 
                                 <TextBlock Text="Block" Style="{StaticResource Section}"/>
@@ -487,17 +475,35 @@
 
         <!-- preview -->
         <Border Style="{StaticResource CardBorder}" Grid.Row="0" Grid.Column="2" ClipToBounds="True">
+            <DockPanel>
+                <!-- view bar: everything that only steers the preview / view direction -->
+                <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Background="White" Padding="12,8,12,2">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                            <CheckBox x:Name="ViewSnapCheck" Content="Snap view angles" Margin="14,4,0,0" Checked="OnChanged" Unchecked="OnChanged"/>
+                            <CheckBox x:Name="ShowWipeToggle" Content="Show wipeouts" IsChecked="True" Margin="14,4,0,0" Click="OnShowWipe"/>
+                        </StackPanel>
+                        <WrapPanel>
+                            <Button Style="{StaticResource Chip}" Content="Side" Tag="0,0" Click="OnPreset"/>
+                            <Button Style="{StaticResource Chip}" Content="Head end" Tag="90,0" Click="OnPreset"/>
+                            <Button Style="{StaticResource Chip}" Content="Thread end" Tag="-90,0" Click="OnPreset"/>
+                            <Button Style="{StaticResource Chip}" Content="Top" Tag="0,90" Click="OnPreset"/>
+                            <Button Style="{StaticResource Chip}" Content="Iso SW" Tag="-45,35.264" Click="OnPreset"/>
+                            <Button Style="{StaticResource Chip}" Content="Iso SE" Tag="45,35.264" Click="OnPreset"/>
+                            <Button Style="{StaticResource Chip}" Content="Iso NE" Tag="135,35.264" Click="OnPreset"/>
+                            <Button Style="{StaticResource Chip}" Content="Iso NW" Tag="-135,35.264" Click="OnPreset"/>
+                        </WrapPanel>
+                    </DockPanel>
+                </Border>
             <Grid>
                 <ui:PreviewControl x:Name="Preview"/>
                 <TextBox x:Name="DistBox" Visibility="Collapsed" Width="84" Height="28" HorizontalAlignment="Left" VerticalAlignment="Top"
                          BorderBrush="#E11D48" BorderThickness="1.5" FontWeight="SemiBold" KeyDown="OnDistKey" LostFocus="OnDistLost"/>
-                <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12" Orientation="Horizontal">
-                    <ToggleButton x:Name="ShowWipeToggle" Content="Show wipeouts" IsChecked="True" Padding="10,4" Click="OnShowWipe"/>
-                </StackPanel>
                 <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="14,0,0,40" Background="#CCFFFFFF" CornerRadius="8" Padding="10,6">
                     <TextBlock x:Name="InfoText" FontSize="12" Foreground="{StaticResource Muted}"/>
                 </Border>
             </Grid>
+            </DockPanel>
         </Border>
 
         <!-- actions -->

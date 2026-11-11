@@ -47,13 +47,13 @@ namespace WS.BoltTool.Data
         static string FilePath => Path.Combine(Standards.DataFolder, "settings.json");
         static string LangPath => Path.Combine(Standards.DataFolder, "language.txt");
 
-        /// <summary>UI language: "en" or "ja". First run follows the Windows display language.</summary>
+        /// <summary>UI language: "en" or "ja". English until the user picks Japanese.</summary>
         public static string Language
         {
             get
             {
                 try { if (File.Exists(LangPath)) return File.ReadAllText(LangPath).Trim(); } catch { }
-                return System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja" ? "ja" : "en";
+                return "en";
             }
             set { try { File.WriteAllText(LangPath, value); } catch { } }
         }

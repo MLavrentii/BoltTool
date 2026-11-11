@@ -27,6 +27,7 @@ namespace WS.BoltTool.UI
         double _rawAz, _rawEl; bool _rawValid;                  // unsnapped angles while orbiting
         readonly HashSet<string> _sel = new();                  // selected part roles (Ctrl+click in the preview)
         Layout _lay; bool _downAdded, _partDragging; double _dragAccum; Dictionary<string, double> _dragStart;
+        double _stepMin, _stepMax;                              // how far the selection can move before it touches something
         readonly Stack<string> _undo = new(), _redo = new();
 
         public BoltToolWindow()
@@ -650,6 +651,33 @@ namespace WS.BoltTool.UI
             }
         }
 
+        /// <summary>
+        /// How far the selected parts can move together (mm, negative = toward the head) before they touch
+        /// a part that is not selected or the underside of the bolt head.
+        /// </summary>
+        (double min, double max) MoveLimits()
+        {
+            double min = double.NegativeInfinity, max = double.PositiveInfinity;
+            if (_lay == null) return (min, max);
+            const double eps = 1e-6;
+            bool rod = _lay.Parts[0].Kind == PartKind.ThreadedRod;
+            double head = RefX(_lay);
+            foreach (var s in _lay.Parts)
+            {
+                if (!_sel.Contains(s.Role)) continue;
+                double a = s.X, b = s.X + s.Thickness;
+                if (!rod) min = Math.Max(min, head - a);
+                foreach (var n in _lay.Parts)
+                {
+                    if (n.Role == "bolt" || _sel.Contains(n.Role)) continue;
+                    double c = n.X, d = n.X + n.Thickness;
+                    if (c >= b - eps) max = Math.Min(max, c - b);          // neighbour on the thread side
+                    else if (d <= a + eps) min = Math.Max(min, d - a);     // neighbour on the head side
+                }
+            }
+            return (Math.Min(min, 0), Math.Max(max, 0));
+        }
+
         void OnPartDown(int group)
         {
             HideDistBox();
@@ -664,6 +692,7 @@ namespace WS.BoltTool.UI
             _downAdded = _sel.Add(role);
             _dragAccum = 0;
             _dragStart = _sel.ToDictionary(r => r, r => Off(r));
+            (_stepMin, _stepMax) = MoveLimits();
             Render(false, true);
         }
 
@@ -672,6 +701,7 @@ namespace WS.BoltTool.UI
             if (_dragStart == null) return;
             _dragAccum += mm;
             double step = Math.Round(_dragAccum * 2) / 2;            // 0.5 mm steps
+            step = Math.Clamp(step, _stepMin, _stepMax);             // stop at contact with the next part / the head
             SetOffsets(_dragStart.ToDictionary(k => k.Key, k => k.Value + step));
             _partDragging = !final;
             if (final) NormalizeOffsets();
@@ -698,18 +728,31 @@ namespace WS.BoltTool.UI
 
         void HideDistBox() => DistBox.Visibility = Visibility.Collapsed;
 
+        /// <summary>Unselects all parts (Esc, also from inside the distance field).</summary>
+        void ClearSelection()
+        {
+            HideDistBox();
+            _dragStart = null;
+            if (_sel.Count == 0) return;
+            _sel.Clear();
+            Preview.Focus();
+            Render(false, true);
+        }
+
         void OnDistLost(object sender, RoutedEventArgs e) => HideDistBox();
 
         void OnDistKey(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape) { HideDistBox(); e.Handled = true; return; }
+            if (e.Key == Key.Escape) { ClearSelection(); e.Handled = true; return; }
             if (e.Key != Key.Enter) return;
             e.Handled = true;
             if (_sel.Count > 0 && _lay != null)
             {
                 double cur = NearX(_lay) - RefX(_lay);
                 double target = Math.Max(0, Num(DistBox.Text, cur));
-                SetOffsets(_sel.ToDictionary(r => r, r => Off(r) + (target - cur)));
+                var (lo, hi) = MoveLimits();
+                double delta = Math.Clamp(target - cur, lo, hi);     // a typed value also stops at contact
+                SetOffsets(_sel.ToDictionary(r => r, r => Off(r) + delta));
                 NormalizeOffsets();
                 UpdateDependent();
                 Render(false, true);
@@ -771,6 +814,15 @@ namespace WS.BoltTool.UI
             bool shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
             if (ctrl && e.Key == Key.Z) { if (shift) Redo(); else Undo(); e.Handled = true; return; }
             if (ctrl && e.Key == Key.Y) { Redo(); e.Handled = true; return; }
+
+            // Esc: close the distance field and drop the part selection (an open drop-down list keeps its own Esc)
+            if (e.Key == Key.Escape && !(Keyboard.FocusedElement is ComboBoxItem) &&
+                (_sel.Count > 0 || DistBox.Visibility == Visibility.Visible))
+            {
+                ClearSelection();
+                e.Handled = true;
+                return;
+            }
 
             if (e.Key is Key.Left or Key.Right or Key.Up or Key.Down)
             {
