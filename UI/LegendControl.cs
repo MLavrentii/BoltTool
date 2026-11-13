@@ -105,7 +105,10 @@ namespace BoltToolApp.UI
                 case PartKind.SocketCapScrew: DrawBolt(dc, true, false); break;
                 case PartKind.ThreadedRod: DrawRod(dc); break;
                 case PartKind.HexNut:
-                case PartKind.ThinNut: DrawNut(dc); break;
+                case PartKind.ThinNut:
+                case PartKind.FlangeNut:
+                case PartKind.ChannelNut:
+                case PartKind.ChannelNutHolder: DrawNut(dc); break;
                 case PartKind.SpringWasher: DrawWasher(dc, "s"); break;
                 default: DrawWasher(dc, "h"); break;
             }

@@ -19,14 +19,17 @@ namespace BoltToolApp.Data
         ThinNut,            // ISO 4035 / JIS B1181 type 3
         PlainWasher,        // ISO 7089 / JIS B1256
         LargeWasher,        // ISO 7093 / JIS B1256 large
-        SpringWasher        // DIN 127 B / JIS B1251 No.2
+        SpringWasher,       // DIN 127 B / JIS B1251 No.2
+        FlangeNut,          // nut with built-in washer face, ISO 4161 / JIS B1190
+        ChannelNut,         // rectangular nut for 41 mm strut channel (ダクターチャンネル), grooves grip the channel lips
+        ChannelNutHolder    // 翼型ナット + 固定ブロック: channel nut with a plastic holder plate outside the channel
     }
 
     public static class PartKindInfo
     {
         public static bool IsBolt(PartKind k) => k <= PartKind.ThreadedRod;
-        public static bool IsNut(PartKind k) => k == PartKind.HexNut || k == PartKind.ThinNut;
-        public static bool IsWasher(PartKind k) => k >= PartKind.PlainWasher;
+        public static bool IsNut(PartKind k) => k == PartKind.HexNut || k == PartKind.ThinNut || k == PartKind.FlangeNut || k == PartKind.ChannelNut || k == PartKind.ChannelNutHolder;
+        public static bool IsWasher(PartKind k) => k == PartKind.PlainWasher || k == PartKind.LargeWasher || k == PartKind.SpringWasher;
         public static bool HasLength(PartKind k) => IsBolt(k);
 
         public static string DisplayName(PartKind k) => k switch
@@ -40,6 +43,9 @@ namespace BoltToolApp.Data
             PartKind.PlainWasher => "Plain washer",
             PartKind.LargeWasher => "Large washer",
             PartKind.SpringWasher => "Spring lock washer",
+            PartKind.FlangeNut => "Flange nut (nut with washer face)",
+            PartKind.ChannelNut => "Channel nut (for 41 channel)",
+            PartKind.ChannelNutHolder => "Channel nut + holder (wing nut + fixing block)",
             _ => k.ToString()
         };
 
@@ -54,6 +60,10 @@ namespace BoltToolApp.Data
             (FastenerStandard.ISO, PartKind.PlainWasher) => "ISO 7089",
             (FastenerStandard.ISO, PartKind.LargeWasher) => "ISO 7093",
             (FastenerStandard.ISO, PartKind.SpringWasher) => "DIN 127B",
+            (FastenerStandard.ISO, PartKind.FlangeNut) => "ISO 4161",
+            (FastenerStandard.JIS, PartKind.FlangeNut) => "JIS B1190",
+            (_, PartKind.ChannelNut) => "Channel nut 41",
+            (_, PartKind.ChannelNutHolder) => "Channel nut 41 + holder",
             (FastenerStandard.JIS, PartKind.HexBolt) => "JIS B1180",
             (FastenerStandard.JIS, PartKind.HexBoltFullThread) => "JIS B1180 FT",
             (FastenerStandard.JIS, PartKind.SocketCapScrew) => "JIS B1176",
@@ -78,6 +88,9 @@ namespace BoltToolApp.Data
             PartKind.PlainWasher => "WSH",
             PartKind.LargeWasher => "WSHL",
             PartKind.SpringWasher => "SPW",
+            PartKind.FlangeNut => "NUTF",
+            PartKind.ChannelNut => "NUTC",
+            PartKind.ChannelNutHolder => "NUTCH",
             _ => "P"
         };
     }
@@ -111,6 +124,8 @@ namespace BoltToolApp.Data
         [JsonIgnore] public double D2 => D - 0.649519 * P;     // pitch diameter
         [JsonIgnore] public double D3 => D - 1.226869 * P;     // minor diameter (bolt)
         [JsonIgnore] public double D1Nut => D - 1.082532 * P;  // minor diameter (nut)
+        [JsonIgnore] public double FlangeD => Math.Round(2.1 * D + 1.3, 1);   // flange nut: flange diameter (approximation of ISO 4161)
+        [JsonIgnore] public double FlangeM => D;                              // flange nut: height
     }
 
     public class StandardTable

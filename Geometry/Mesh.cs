@@ -142,6 +142,53 @@ namespace BoltToolApp.Geometry
         /// of (x, r) points. Vertices are (x, r·cosθ, r·sinθ). With a θ-dependent radius this builds hexagons,
         /// chamfered hex heads, sockets etc. as one closed, consistently oriented surface.
         /// </summary>
+        /// <summary>Copy of this mesh mirrored along the axis: x -> length - x (used to turn a part around).</summary>
+        public Mesh MirroredX(double length)
+        {
+            var m = new Mesh();
+            var map = new int[V.Count];
+            for (int i = 0; i < V.Count; i++) map[i] = m.AddVertex(new Vec3(length - V[i].X, V[i].Y, V[i].Z));
+            for (int t = 0; t < TriangleCount; t++)
+                m.AddTri(map[T[3 * t]], map[T[3 * t + 2]], map[T[3 * t + 1]], TriGroup[t]);   // keep the orientation
+            foreach (var th in Threads)
+                m.Threads.Add(new ThreadInfo
+                {
+                    X0 = length - th.X1, X1 = length - th.X0, RMajor = th.RMajor, RMinor = th.RMinor,
+                    Internal = th.Internal, ShowTermination = th.ShowTermination, Group = th.Group
+                });
+            m.GroupCount = GroupCount;
+            return m;
+        }
+
+        /// <summary>
+        /// Full-revolution loft with explicit angles (radians, ascending, in [0, 2π)). Used for non-round outlines
+        /// (rectangles) so that every corner is an exact vertex.
+        /// </summary>
+        public void LoftAngles(Func<double, IList<(double x, double r)>> profile, IList<double> angles, bool profileClosed, int group)
+        {
+            var rings = new List<int[]>(angles.Count);
+            int nP = -1;
+            foreach (double th in angles)
+            {
+                var prof = profile(th);
+                if (nP < 0) nP = prof.Count;
+                double c = Math.Cos(th), s = Math.Sin(th);
+                var ring = new int[nP];
+                for (int i = 0; i < nP; i++) ring[i] = AddVertex(new Vec3(prof[i].x, prof[i].r * c, prof[i].r * s));
+                rings.Add(ring);
+            }
+            int pSeg = profileClosed ? nP : nP - 1;
+            for (int j = 0; j < rings.Count; j++)
+            {
+                var a = rings[j]; var b = rings[(j + 1) % rings.Count];
+                for (int i = 0; i < pSeg; i++)
+                {
+                    int i2 = (i + 1) % nP;
+                    AddQuad(a[i], a[i2], b[i2], b[i], group);
+                }
+            }
+        }
+
         public void Loft(Func<double, IList<(double x, double r)>> profile, int segments, bool profileClosed,
                          int group, double angleStart = 0, double angleSweep = 2 * Math.PI)
         {

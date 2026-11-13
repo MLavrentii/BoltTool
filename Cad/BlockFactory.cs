@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text.Json;
 using System.Text;
 using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.DatabaseServices;
@@ -29,9 +30,6 @@ namespace BoltToolApp.Cad
             return PartBuilder.ComputeLayout(job).Parts.Select(p => p.Role).ToList();
         }
 
-        static BasePoint BoltBase(BasePoint bp) =>
-            bp == BasePoint.UnderHead || bp == BasePoint.ThreadEnd || bp == BasePoint.Center ? bp : BasePoint.HeadTop;
-
         /// <summary>Axial position (assembly coordinates, bolt head top = 0) of the base point of a role.</summary>
         public static double LayoutBaseX(BoltJob job, string role, Layout lay = null)
         {
@@ -39,10 +37,14 @@ namespace BoltToolApp.Cad
             if (role == RoleSingle) return PartBuilder.BaseX(job.Kind, row, job.Length, job.BasePoint);
             lay ??= PartBuilder.ComputeLayout(job);
             if (role == RoleAssembly || role == RoleBolt)
-            {
-                var b = lay.Parts[0];
-                return b.X + PartBuilder.BaseX(b.Kind, row, b.Length, BoltBase(job.BasePoint));
-            }
+                return job.BasePoint switch
+                {
+                    BasePoint.UnderHead => lay.UnderHead,                              // underside of the head
+                    BasePoint.ClampHead => lay.ClampStart,                             // face that presses on the clamped parts (head side)
+                    BasePoint.ClampNut => lay.HasNutSide ? lay.ClampEnd : lay.BoltEnd, // face of the nut-side elements toward the head
+                    BasePoint.ThreadEnd => lay.BoltEnd,
+                    _ => 0                                                             // middle of the head top
+                };
             var p = lay.Parts.FirstOrDefault(x => x.Role == role);
             return p?.X ?? 0;
         }
@@ -68,6 +70,10 @@ namespace BoltToolApp.Cad
 
         static string Fmt(double v) => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 
+        // Full-precision values for the geometry cache key: two dimensions such as
+        // 2.000 and 2.004 mm must NOT reuse the same existing AutoCAD block.
+        static string Exact(double v) => v.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+
         /// <summary>Returns the id of the block definition for the role, creating it when needed.</summary>
         public static ObjectId GetOrCreate(Database db, Transaction tr, BoltJob job, string role)
         {
@@ -86,10 +92,13 @@ namespace BoltToolApp.Cad
             string prefix = role == RoleAssembly
                 ? $"BT_{std}_ASM_{job.Size}x{Fmt(lay.BoltLength)}_C{Fmt(job.ClampLength)}"
                 : $"BT_{std}_{PartKindInfo.Code(main.Kind)}_{sizeTxt}";
-            string geomKey = string.Join("|", "v3", std, job.Size, role,
-                string.Join(";", parts.Select(p => $"{p.Kind}:{Fmt(p.X - baseX)}:{Fmt(p.Length)}")),
-                job.Thread, Fmt(job.Azimuth), Fmt(job.Elevation), Fmt(job.Spin), job.HiddenLines, job.Output,
-                Fmt(job.Scale), job.Wipeout, job.WipeoutLayer, Fmt(row.S), Fmt(row.K), Fmt(row.M));
+            // Include the complete size table row: users can edit ISO/JIS dimensions in JSON.
+            // Hash from full precision rather than display rounding to avoid accidental reuse
+            // of a block whose stored geometry differs from the newly requested dimensions.
+            string geomKey = string.Join("|", "v5", std, job.Size, role,
+                string.Join(";", parts.Select(p => $"{p.Kind}:{Exact(p.X - baseX)}:{Exact(p.Length)}:{Exact(p.Thickness)}:{Exact(p.OuterR)}:{p.Item?.Side}")),
+                job.Thread, Exact(job.Azimuth), Exact(job.Elevation), Exact(job.Spin), job.HiddenLines, job.Output,
+                Exact(job.Scale), job.Wipeout, job.WipeoutLayer, JsonSerializer.Serialize(row));
             string name = $"{prefix}_{job.ViewCode()}_{Hash(geomKey)}".Replace('.', '_');
 
             var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
@@ -103,7 +112,7 @@ namespace BoltToolApp.Cad
 
             // geometry in assembly coordinates
             var mesh = new Mesh();
-            foreach (var p in parts) mesh.Append(PartBuilder.BuildPart(p.Kind, row, p.Length, job.Thread), p.X);
+            foreach (var p in parts) mesh.Append(PartBuilder.BuildPart(p.Kind, row, p.Length, job.Thread, p.Item, job.IsAssembly), p.X);
 
             if (job.Output == OutputMode.View2D) Write2D(db, tr, btr, job, mesh, baseX);
             else Write3D(db, tr, btr, job, parts, row, baseX);
@@ -172,7 +181,7 @@ namespace BoltToolApp.Cad
             double sc = job.Scale;
             foreach (var p in parts)
             {
-                var m = PartBuilder.BuildPart(p.Kind, row, p.Length, job.Thread == ThreadStyle.Detailed ? ThreadStyle.Detailed : ThreadStyle.None);
+                var m = PartBuilder.BuildPart(p.Kind, row, p.Length, job.Thread == ThreadStyle.Detailed ? ThreadStyle.Detailed : ThreadStyle.None, p.Item, job.IsAssembly);
                 var verts = new Point3dCollection();
                 foreach (var v in m.V) verts.Add(new Point3d((v.X + p.X - baseX) * sc, v.Y * sc, v.Z * sc));
                 var faces = new Int32Collection();

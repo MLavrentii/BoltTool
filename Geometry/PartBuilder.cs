@@ -12,13 +12,23 @@ namespace BoltToolApp.Geometry
         public double X;
         public double Length;     // bolts only (under-head length / rod length)
         public double Thickness;  // axial extent of the part (head + length for bolts)
+        public double OuterR;     // largest radius (for grips, diagrams)
+        public StackItem Item;    // null for the bolt / a single part
     }
 
     public class Layout
     {
         public List<PlacedPart> Parts = new();
         public double BoltLength;
+        public double Required;     // shortest bolt length that fits everything incl. protrusion
+        public double UnderHead;    // x of the underside of the head (rod: start of the element stack)
+        public double ClampStart;   // x of the face that presses on the clamped parts from the head side
+        public double ClampEnd;     // x of the face that presses on the clamped parts from the nut side
+        public double StackEnd;     // x of the far face of the last element
+        public double BoltEnd;      // x of the thread end
+        public bool HasNutSide;     // at least one element behind the clamped parts
         public string Warning;
+        public double Protrusion => BoltEnd - StackEnd;
     }
 
     public static class PartBuilder
@@ -33,34 +43,75 @@ namespace BoltToolApp.Geometry
             _ => 0
         };
 
-        public static double Thickness(PartKind k, SizeRow r, double length = 0) => k switch
+        /// <summary>Standard thickness of a part (ignores any override).</summary>
+        public static double StandardThickness(PartKind k, SizeRow r) => k switch
         {
             PartKind.HexNut => r.M,
             PartKind.ThinNut => r.MThin,
+            PartKind.FlangeNut => r.FlangeM,
+            PartKind.ChannelNut => ChannelDims(r).t,
+            PartKind.ChannelNutHolder => HolderPlate + HolderLip + ChannelDims(r).t,
             PartKind.PlainWasher => r.WasherH,
             PartKind.LargeWasher => r.LargeH,
             PartKind.SpringWasher => r.SpringT,
-            _ => HeadHeight(k, r) + length
+            _ => HeadHeight(k, r)
         };
 
-        /// <summary>Local axial position of a base point option.</summary>
+        public static double Thickness(PartKind k, SizeRow r, double length = 0, StackItem item = null)
+        {
+            if (PartKindInfo.IsBolt(k)) return HeadHeight(k, r) + length;
+            return item != null && item.Thickness > 0 ? item.Thickness : StandardThickness(k, r);
+        }
+
+        /// <summary>Standard outer diameter of a washer-like part (0 for hex nuts and bolts).</summary>
+        public static double StandardOuterD(PartKind k, SizeRow r) => k switch
+        {
+            PartKind.PlainWasher => r.WasherD2,
+            PartKind.LargeWasher => r.LargeD2,
+            PartKind.SpringWasher => r.SpringD2,
+            PartKind.FlangeNut => r.FlangeD,
+            _ => 0
+        };
+
+        /// <summary>
+        /// Channel nut for 41 mm strut channel (slot 22 mm): length across the channel, width (fits through the
+        /// slot), thickness. Approximation of common catalogue nuts (M10: 35 × 20 × 8) – verify with the maker.
+        /// </summary>
+        public static (double length, double width, double t) ChannelDims(SizeRow r) =>
+            (r.D <= 16 ? 35.0 : 40.0, 20.0, Math.Max(6.0, Math.Round(0.8 * r.D)));
+
+        public static double OuterD(PartKind k, SizeRow r, StackItem item = null)
+        {
+            double std = StandardOuterD(k, r);
+            if (std <= 0) return 0;
+            double min = r.D + 1;
+            return item != null && item.OuterD > min ? item.OuterD : std;
+        }
+
+        /// <summary>Largest radius of a part.</summary>
+        public static double OuterRadius(PartKind k, SizeRow r, StackItem item = null)
+        {
+            double d = OuterD(k, r, item);
+            if (d > 0) return d / 2;
+            if (k == PartKind.SocketCapScrew) return r.SocketDk / 2;
+            if (k == PartKind.ChannelNut) { var c = ChannelDims(r); return Math.Sqrt(c.length * c.length + c.width * c.width) / 2; }
+            if (k == PartKind.ChannelNutHolder) return Math.Sqrt(Math.Pow(HolderW / 2 + HolderTab, 2) + Math.Pow(HolderL / 2, 2));
+            if (k == PartKind.ThreadedRod) return r.D / 2;
+            return r.S / 2 / 0.8660254037844386;      // hexagon across corners
+        }
+
+        /// <summary>Local axial position of a base point option (single parts).</summary>
         public static double BaseX(PartKind k, SizeRow r, double length, BasePoint bp)
         {
             double t = Thickness(k, r, length);
             if (PartKindInfo.IsBolt(k))
                 return bp switch
                 {
-                    BasePoint.UnderHead => HeadHeight(k, r),
-                    BasePoint.ThreadEnd => t,
-                    BasePoint.Center => t / 2,
+                    BasePoint.UnderHead or BasePoint.ClampHead => HeadHeight(k, r),
+                    BasePoint.ThreadEnd or BasePoint.ClampNut => t,
                     _ => 0
                 };
-            return bp switch
-            {
-                BasePoint.OuterFace => t,
-                BasePoint.Center => t / 2,
-                _ => 0
-            };
+            return bp == BasePoint.OuterFace ? t : 0;
         }
 
         // ------------------------------------------------------------------ layout
@@ -72,64 +123,69 @@ namespace BoltToolApp.Geometry
             if (!job.IsAssembly)
             {
                 double len = PartKindInfo.HasLength(job.Kind) ? job.Length : 0;
-                lay.Parts.Add(new PlacedPart { Kind = job.Kind, Role = "single", X = 0, Length = len, Thickness = Thickness(job.Kind, row, len) });
-                lay.BoltLength = len;
+                lay.Parts.Add(new PlacedPart
+                {
+                    Kind = job.Kind, Role = "single", X = 0, Length = len, Thickness = Thickness(job.Kind, row, len),
+                    OuterR = OuterRadius(job.Kind, row)
+                });
+                lay.BoltLength = lay.Required = len;
+                lay.UnderHead = lay.ClampStart = HeadHeight(job.Kind, row);
+                lay.ClampEnd = lay.StackEnd = lay.BoltEnd = lay.Parts[0].Thickness;
                 return lay;
             }
 
+            job.EnsureStack();
             var bolt = job.BoltKind;
             bool rod = bolt == PartKind.ThreadedRod;
-            var headSide = new List<(PartKind k, string role)>();   // ordered outward from the clamped parts
-            var nutSide = new List<(PartKind k, string role)>();
 
-            PartKind? W(WasherChoice c) => c == WasherChoice.Plain ? PartKind.PlainWasher : c == WasherChoice.Large ? PartKind.LargeWasher : null;
-
-            if (W(job.HeadWasher) is PartKind hw) headSide.Add((hw, "headwasher"));
-            if (job.Spring == SpringPosition.UnderHead) headSide.Add((PartKind.SpringWasher, "spring"));
-            if (W(job.NutWasher) is PartKind nw) nutSide.Add((nw, "nutwasher"));
-            if (job.Spring == SpringPosition.UnderNut) nutSide.Add((PartKind.SpringWasher, "spring"));
-            int nuts = Math.Clamp(job.NutCount, 0, 2);
-            for (int i = 0; i < nuts; i++) nutSide.Add((i == 0 ? job.NutKind : PartKind.ThinNut, i == 0 ? "nut" : "jamnut"));
-            if (rod) for (int i = 0; i < Math.Max(1, nuts); i++) headSide.Add((i == 0 ? job.NutKind : PartKind.ThinNut, i == 0 ? "headnut" : "headjamnut"));
-
-            double pos = 0;
-            foreach (var (k, role) in headSide)
+            // x = 0 is the underside of the bolt head; elements follow each other with their gaps
+            double x = 0;
+            bool headNut = false, endNut = false, hasNutSide = false;
+            foreach (var it in job.Stack)
             {
-                double t = Thickness(k, row); pos -= t;
-                lay.Parts.Add(new PlacedPart { Kind = k, Role = role, X = pos, Thickness = t });
+                if (it.Side != StackSide.Head) continue;
+                x += Math.Max(0, it.Gap);
+                double t = Thickness(it.Kind, row, 0, it);
+                lay.Parts.Add(new PlacedPart { Kind = it.Kind, Role = it.Id, X = x, Thickness = t, OuterR = OuterRadius(it.Kind, row, it), Item = it });
+                x += t;
+                headNut |= PartKindInfo.IsNut(it.Kind);
             }
-            double headEnd = pos;
-            pos = job.ClampLength;
-            foreach (var (k, role) in nutSide)
+            lay.ClampStart = x;
+            x += Math.Max(0, job.ClampLength);
+            lay.ClampEnd = x;
+            foreach (var it in job.Stack)
             {
-                double t = Thickness(k, row);
-                lay.Parts.Add(new PlacedPart { Kind = k, Role = role, X = pos, Thickness = t });
-                pos += t;
+                if (it.Side != StackSide.Nut) continue;
+                x += Math.Max(0, it.Gap); // first nut-side element can have free space after the plates
+                hasNutSide = true;
+                double t = Thickness(it.Kind, row, 0, it);
+                lay.Parts.Add(new PlacedPart { Kind = it.Kind, Role = it.Id, X = x, Thickness = t, OuterR = OuterRadius(it.Kind, row, it), Item = it });
+                x += t;
+                endNut |= PartKindInfo.IsNut(it.Kind);
             }
-            // manual shifts from the preview (Ctrl+drag): a part can be moved along the bolt, but not into the head
-            if (job.Offsets != null && job.Offsets.Count > 0)
-                foreach (var p in lay.Parts)
-                    if (job.Offsets.TryGetValue(p.Role, out double off) && Math.Abs(off) > 1e-9)
-                        p.X = rod ? p.X + off : Math.Max(p.X + off, headEnd);
-            double nutEnd = pos;
-            if (nutSide.Count > 0)
-            {
-                nutEnd = double.MinValue;
-                foreach (var p in lay.Parts) nutEnd = Math.Max(nutEnd, p.X + p.Thickness);
-            }
-            double prot = nuts > 0 ? job.MinProtrusionPitches * row.P : 0;
+            lay.HasNutSide = hasNutSide;
+            lay.StackEnd = x;
 
-            double required = rod ? (nutEnd - headEnd) + 2 * prot : (nutEnd - headEnd) + prot;
+            double prot = job.MinProtrusionPitches * row.P;
+            double protEnd = endNut ? prot : 0;
+            double protHead = rod && headNut ? prot : 0;      // a rod also sticks out of the nut on the head side
+            double required = lay.StackEnd + protEnd + protHead;
             double length = job.AutoLength ? job.Table.NextStandardLength(required) : job.Length;
-            if (length < required - 1e-6) lay.Warning = $"Length {length} is shorter than the required {required:0.#} mm";
-
-            double hk = HeadHeight(bolt, row);
-            double boltX = rod ? headEnd - (length - (nutEnd - headEnd)) / 2 : headEnd - hk;
-            lay.Parts.Insert(0, new PlacedPart { Kind = bolt, Role = "bolt", X = boltX, Length = length, Thickness = hk + length });
+            if (length < required - 1e-6) lay.Warning = $"Length {length:0.##} is shorter than the required {required:0.#} mm";
+            lay.Required = required;
             lay.BoltLength = length;
 
             // shift so that the bolt head top (rod start) is at x = 0
-            foreach (var p in lay.Parts) p.X -= boltX;
+            double hk = HeadHeight(bolt, row);
+            double shift = rod ? protHead : hk;
+            foreach (var p in lay.Parts) p.X += shift;
+            lay.UnderHead = shift;
+            lay.ClampStart += shift; lay.ClampEnd += shift; lay.StackEnd += shift;
+            lay.BoltEnd = hk + length;
+            lay.Parts.Insert(0, new PlacedPart
+            {
+                Kind = bolt, Role = "bolt", X = 0, Length = length, Thickness = hk + length, OuterR = OuterRadius(bolt, row)
+            });
             return lay;
         }
 
@@ -142,10 +198,15 @@ namespace BoltToolApp.Geometry
             return a / Math.Cos(t - Math.PI / 6);
         }
 
-        /// <summary>Builds the mesh of one part in its local frame (x from 0).</summary>
-        public static Mesh BuildPart(PartKind kind, SizeRow r, double length, ThreadStyle thread)
+        /// <summary>
+        /// Builds the mesh of one part in its local frame (x from 0). <paramref name="item"/> carries thickness /
+        /// diameter overrides; <paramref name="assembled"/> draws a spring washer flat (tightened).
+        /// </summary>
+        public static Mesh BuildPart(PartKind kind, SizeRow r, double length, ThreadStyle thread,
+                                     StackItem item = null, bool assembled = false)
         {
             var m = new Mesh();
+            double t = Thickness(kind, r, length, item);
             switch (kind)
             {
                 case PartKind.HexBolt:
@@ -155,22 +216,34 @@ namespace BoltToolApp.Geometry
                     BuildBolt(m, kind, r, length, thread); break;
                 case PartKind.HexNut:
                 case PartKind.ThinNut:
-                    BuildNut(m, r, Thickness(kind, r), thread); break;
+                    BuildNut(m, r, t, thread); break;
+                case PartKind.FlangeNut:
+                    // the flange faces the clamped parts: toward the head on the nut side, away from it on the head side
+                    BuildFlangeNut(m, r, t, OuterD(kind, r, item), thread, item != null && item.Side == StackSide.Head); break;
+                case PartKind.ChannelNut:
+                    // the grooved face grips the channel lips = faces the clamped parts
+                    BuildChannelNut(m, r, t, thread, item != null && item.Side == StackSide.Head); break;
+                case PartKind.ChannelNutHolder:
+                {
+                    var hm = BuildChannelNutHolder(r, t, thread);
+                    m.Append(item != null && item.Side == StackSide.Head ? hm.MirroredX(t) : hm, 0);
+                    break;
+                }
                 case PartKind.SpringWasher:
-                    BuildSpring(m, r); break;
+                    BuildSpring(m, r, t, OuterD(kind, r, item), assembled); break;
                 default:
-                    BuildWasher(m, kind == PartKind.LargeWasher ? r.LargeD2 : r.WasherD2, r.WasherD1, Thickness(kind, r)); break;
+                    BuildWasher(m, OuterD(kind, r, item), r.WasherD1, t); break;
             }
             return m;
         }
 
-        public static Mesh BuildLayout(Layout lay, SizeRow r, ThreadStyle thread)
+        public static Mesh BuildLayout(Layout lay, SizeRow r, ThreadStyle thread, bool assembled = true)
         {
             var all = new Mesh();
             for (int i = 0; i < lay.Parts.Count; i++)
             {
                 var p = lay.Parts[i];
-                all.Append(BuildPart(p.Kind, r, p.Length, thread), p.X);
+                all.Append(BuildPart(p.Kind, r, p.Length, thread, p.Item, assembled && lay.Parts.Count > 1), p.X);
                 while (all.GroupOwner.Count < all.GroupCount) all.GroupOwner.Add(i);
             }
             return all;
@@ -325,11 +398,177 @@ namespace BoltToolApp.Geometry
             m.Loft(_ => prof, Segments, true, g);
         }
 
-        static void BuildSpring(Mesh m, SizeRow r)
+        /// <summary>
+        /// Rectangular channel nut: length along model Y, two opposite corners cut (so it can be turned in the
+        /// channel), threaded hole, two V-grooves across the width on the face that grips the channel lips.
+        /// Built as a loft with explicit angles so all corners and groove edges are exact.
+        /// flip = grooved face at x = h instead of x = 0.
+        /// </summary>
+        // ---- holder plate of the 翼型ナット + 固定ブロック set (plastic, sits outside the channel on the lips) ----
+        public const double HolderPlate = 2.0;   // plate thickness
+        public const double HolderLip = 2.5;     // default channel lip thickness = height of the collar in the slot
+        const double HolderL = 46.0, HolderW = 28.0, HolderTab = 3.0, HolderCollarR = 9.0;
+
+        /// <summary>
+        /// Channel nut with its holder ("wing nut + fixing block"):
+        ///   x = 0 .. plate        holder plate (long along the channel = model Z), V-notches at both ends,
+        ///                          wing tabs on two diagonal corners
+        ///   plate .. plate+lip    round collar that sits in the channel slot (lip thickness)
+        ///   plate+lip .. total    the metal channel nut inside the channel (long across the channel = model Y)
+        /// total = whole height; a thickness override changes the lip / collar height.
+        /// Holder dimensions are approximations from the installation drawing – verify with the maker.
+        /// </summary>
+        static Mesh BuildChannelNutHolder(SizeRow r, double total, ThreadStyle thread)
+        {
+            var m = new Mesh();
+            double tNut = ChannelDims(r).t;
+            double lip = Math.Max(0.5, total - HolderPlate - tNut);
+            double hu = HolderW / 2, hv = HolderL / 2, n = 3.0, nd = 4.0, tw = 6.0, tab = HolderTab;
+            var outline = new (double u, double v)[]
+            {
+                (-hu, -hv + tw), (-hu - tab, -hv + tw * 0.4), (-hu - tab, -hv + 1.0), (-hu, -hv),   // wing
+                (-n, -hv), (0, -hv + nd), (n, -hv),                                                  // V notch
+                (hu, -hv), (hu, hv - tw),
+                (hu + tab, hv - tw * 0.4), (hu + tab, hv - 1.0), (hu, hv),                           // wing
+                (n, hv), (0, hv - nd), (-n, hv), (-hu, hv)                                           // V notch
+            };
+            double rHole = r.D / 2 + 0.5, rc = Math.Max(HolderCollarR, rHole + 1.5);
+            var angles = new List<double>();
+            for (int k = 0; k < 96; k++) angles.Add(2 * Math.PI * k / 96);
+            foreach (var (u, v) in outline) angles.Add(NormAngle(Math.Atan2(v, u)));
+            int g = m.NewGroup();
+            m.LoftAngles(th =>
+            {
+                double R = RayPolygon(outline, th);
+                return new List<(double, double)>
+                {
+                    (0, rHole), (0, R), (HolderPlate, R), (HolderPlate, rc), (HolderPlate + lip, rc), (HolderPlate + lip, rHole)
+                };
+            }, UniqueAngles(angles), true, g);
+            var nut = new Mesh();
+            BuildChannelNut(nut, r, tNut, thread, false);
+            m.Append(nut, HolderPlate + lip);
+            return m;
+        }
+
+        static double NormAngle(double a) { a %= 2 * Math.PI; return a < 0 ? a + 2 * Math.PI : a; }
+
+        static List<double> UniqueAngles(List<double> angles)
+        {
+            angles.Sort();
+            var uniq = new List<double>();
+            foreach (double a in angles) if (uniq.Count == 0 || a - uniq[^1] > 1e-7) uniq.Add(a);
+            if (uniq.Count > 1 && 2 * Math.PI - uniq[^1] + uniq[0] < 1e-7) uniq.RemoveAt(uniq.Count - 1);
+            return uniq;
+        }
+
+        /// <summary>Distance from the origin to a star-shaped polygon along the direction th.</summary>
+        static double RayPolygon((double u, double v)[] poly, double th)
+        {
+            double dx = Math.Cos(th), dy = Math.Sin(th), best = double.MaxValue;
+            for (int i = 0; i < poly.Length; i++)
+            {
+                var (x1, y1) = poly[i]; var (x2, y2) = poly[(i + 1) % poly.Length];
+                double ex = x2 - x1, ey = y2 - y1, den = dx * ey - dy * ex;
+                if (Math.Abs(den) < 1e-12) continue;
+                double t = (x1 * ey - y1 * ex) / den, s = (x1 * dy - y1 * dx) / den;
+                if (t > 0 && s >= -1e-9 && s <= 1 + 1e-9) best = Math.Min(best, t);
+            }
+            return best;
+        }
+
+        static void BuildChannelNut(Mesh m, SizeRow r, double h, ThreadStyle thread, bool flip)
+        {
+            var (len, wid, _) = ChannelDims(r);
+            double hl = len / 2, hw = wid / 2, cut = 0.18 * wid;
+            var poly = new (double u, double v)[]
+            {
+                (hl, -hw), (hl, hw - cut), (hl - cut, hw), (-hl, hw), (-hl, -hw + cut), (-hl + cut, -hw)
+            };
+            double rh = r.D1Nut / 2;
+            double gPos = 12.0, gW = 2.4, gD = Math.Min(1.2, 0.2 * h);    // lips of a 41 channel: slot 22 mm
+            int g = m.NewGroup();
+
+            double Ray(double th)
+            {
+                double dx = Math.Cos(th), dy = Math.Sin(th), best = double.MaxValue;
+                for (int i = 0; i < poly.Length; i++)
+                {
+                    var (x1, y1) = poly[i]; var (x2, y2) = poly[(i + 1) % poly.Length];
+                    double ex = x2 - x1, ey = y2 - y1, den = dx * ey - dy * ex;
+                    if (Math.Abs(den) < 1e-12) continue;
+                    double t = (x1 * ey - y1 * ex) / den, s = (x1 * dy - y1 * dx) / den;
+                    if (t > 0 && s >= -1e-9 && s <= 1 + 1e-9) best = Math.Min(best, t);
+                }
+                return best;
+            }
+
+            var angles = new List<double>();
+            for (int k = 0; k < 96; k++) angles.Add(2 * Math.PI * k / 96);
+            double Norm(double a) { a %= 2 * Math.PI; return a < 0 ? a + 2 * Math.PI : a; }
+            foreach (var (u, v) in poly) angles.Add(Norm(Math.Atan2(v, u)));
+            foreach (double sx in new[] { 1.0, -1.0 })
+                foreach (double dl in new[] { -gW / 2, 0, gW / 2 })
+                    foreach (double sy in new[] { 1.0, -1.0 })
+                        angles.Add(Norm(Math.Atan2(sy * hw, sx * (gPos + dl))));
+            angles.Sort();
+            var uniq = new List<double>();
+            foreach (double a in angles) if (uniq.Count == 0 || a - uniq[^1] > 1e-7) uniq.Add(a);
+            if (uniq.Count > 1 && 2 * Math.PI - uniq[^1] + uniq[0] < 1e-7) uniq.RemoveAt(uniq.Count - 1);
+
+            IList<(double, double)> Profile(double th)
+            {
+                double R = Ray(th), cs = Math.Abs(Math.Cos(th));
+                var p = new List<(double x, double r)> { (0, rh) };
+                foreach (var (dl, depth) in new[] { (-gW / 2, 0.0), (0.0, gD), (gW / 2, 0.0) })
+                {
+                    double rr = cs > 1e-9 ? (gPos + dl) / cs : double.MaxValue;
+                    bool inside = rr > rh && rr < R - 1e-6;
+                    p.Add((inside ? depth : 0, Math.Clamp(rr, rh, R)));
+                }
+                p.Add((0, R)); p.Add((h, R)); p.Add((h, rh));
+                if (!flip) return p;
+                var q = new List<(double x, double r)>(p.Count);
+                for (int i = p.Count - 1; i >= 0; i--) q.Add((h - p[i].x, p[i].r));
+                return q;
+            }
+            m.LoftAngles(Profile, uniq, true, g);
+            if (thread != ThreadStyle.None)
+                m.Threads.Add(new ThreadInfo { X0 = 0, X1 = h, RMajor = r.D / 2, RMinor = rh, Internal = true, Group = g });
+        }
+
+        /// <summary>Hex nut with a round washer face. flip = flange at the far end (x = h).</summary>
+        static void BuildFlangeNut(Mesh m, SizeRow r, double h, double flangeD, ThreadStyle thread, bool flip)
+        {
+            double rh = r.D1Nut / 2, rc = 0.96 * r.S / 2;
+            double rf = Math.Max(flangeD / 2, r.S / 2 / 0.8660254037844386 + 0.2);
+            double tf = Math.Min(0.15 * r.D, h * 0.3);
+            int g = m.NewGroup();
+            IList<(double, double)> Profile(double th)
+            {
+                double R = HexR(r.S, th), rc1 = Math.Min(rc, R), drop = (R - rc1) * Tan30;
+                double cone = tf + (rf - R) * 0.35;
+                var p = new List<(double x, double r)>
+                {
+                    (0, rh), (0, rf), (tf, rf), (Math.Min(cone, h - drop), R), (h - drop, R), (h, rc1), (h, rh)
+                };
+                if (!flip) return p;
+                // mirror along the axis and reverse the order so the surface keeps its orientation
+                var q = new List<(double x, double r)>(p.Count);
+                for (int i = p.Count - 1; i >= 0; i--) q.Add((h - p[i].x, p[i].r));
+                return q;
+            }
+            m.Loft(Profile, Segments, true, g);
+            if (thread != ThreadStyle.None)
+                m.Threads.Add(new ThreadInfo { X0 = 0, X1 = h, RMajor = r.D / 2, RMinor = rh, Internal = true, Group = g });
+        }
+
+        /// <summary>Split spring washer. compressed = tightened (flat); otherwise with its free helical rise.</summary>
+        static void BuildSpring(Mesh m, SizeRow r, double t, double outerD, bool compressed)
         {
             int g = m.NewGroup();
-            double ri = r.SpringD1 / 2, ro = r.SpringD2 / 2, t = r.SpringT;
-            double rise = 0.35 * t;
+            double ri = r.SpringD1 / 2, ro = Math.Max(outerD / 2, ri + 0.5);
+            double rise = compressed ? 0 : 0.35 * t;
             double gap = Math.Min(0.5, 0.6 * t / ((ri + ro) / 2));      // radians
             double start = Math.PI / 2 + gap / 2, sweep = 2 * Math.PI - gap;   // gap at the top of the side view
             IList<(double, double)> Profile(double th)

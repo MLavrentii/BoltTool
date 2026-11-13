@@ -23,8 +23,8 @@ namespace BoltToolApp.Cad
 
         class BoltGrip : GripData
         {
-            public string Kind;          // "len" or "clamp"
-            public Vector3d AxisLocal;   // block-local vector of +1 mm along the axis
+            public string Kind { get; set; }          // "len" or "clamp"
+            public Vector3d AxisLocal { get; set; }   // block-local vector of +1 mm along the axis
             public override bool ViewportDraw(ViewportDraw worldDraw, ObjectId entityId, GripData.DrawType type,
                                               Point3d? imageGripPoint, int gripSizeInPixels)
             {
@@ -71,28 +71,39 @@ namespace BoltToolApp.Cad
             d.CommandFailed += (s, e) => Pending.Clear();
         }
 
-        /// <summary>Grip definitions: (kind, axial position in assembly coordinates).</summary>
-        internal static IEnumerable<(string kind, double x)> GripDefs(BoltJob job)
+        /// <summary>
+        /// Grip definitions: (kind, axial position in assembly coordinates, radial offset from the axis).
+        /// "len"   = thread end: changes only the bolt length.
+        /// "clamp" = the face of the nut-side elements that touches the clamped parts: moves washers / nuts and
+        ///           lets the bolt length follow. It sits on the rim of that element so it does not hide the
+        ///           insertion grip of the block.
+        /// </summary>
+        internal static IEnumerable<(string kind, double x, double radial)> GripDefs(BoltJob job)
         {
             string role = job.Role ?? BlockFactory.RoleSingle;
             var lay = PartBuilder.ComputeLayout(job);
             var bolt = lay.Parts[0];
             if (role == BlockFactory.RoleSingle)
             {
-                if (PartKindInfo.HasLength(job.Kind)) yield return ("len", bolt.Thickness);
+                if (PartKindInfo.HasLength(job.Kind)) yield return ("len", bolt.Thickness, 0);
                 yield break;
             }
             if (role == BlockFactory.RoleBolt || role == BlockFactory.RoleAssembly)
-                yield return ("len", bolt.X + bolt.Thickness);
-            var nutSide = lay.Parts.Where(p => p.Role is "nutwasher" or "nut" or "jamnut" || (p.Role == "spring" && job.Spring == SpringPosition.UnderNut)).ToList();
-            if (nutSide.Count == 0) yield break;
-            if (role == BlockFactory.RoleAssembly)
-                yield return ("clamp", nutSide.Max(p => p.X + p.Thickness));
-            else if (role == "nut" || (role == "nutwasher" && !nutSide.Any(p => p.Role == "nut")))
-            {
-                var p = nutSide.First(x => x.Role == role);
-                yield return ("clamp", p.X + p.Thickness);
-            }
+                yield return ("len", lay.BoltEnd, 0);
+            if (!lay.HasNutSide) yield break;
+            var first = lay.Parts.First(p => p.Item != null && p.Item.Side == StackSide.Nut);
+            if (role == BlockFactory.RoleAssembly || role == first.Role)
+                yield return ("clamp", first.X, first.OuterR);
+        }
+
+        /// <summary>Block-local position of a grip (axial position + radial offset in the drawing plane).</summary>
+        internal static Point3d GripLocation(BoltJob job, string role, double x, double radial)
+        {
+            var p = BlockFactory.LocalPoint(job, role, x);
+            if (radial <= 0) return p;
+            var axis = BlockFactory.Local(job, x + 1) - BlockFactory.Local(job, x);
+            var perp = axis.Length > 1e-9 ? new Vector3d(-axis.Y, axis.X, 0).GetNormal() : Vector3d.YAxis;
+            return p + perp * (radial * job.Scale);
         }
 
         public override void GetGripPoints(Entity entity, GripDataCollection grips, double curViewUnitSize, int gripSize,
@@ -106,7 +117,7 @@ namespace BoltToolApp.Cad
                 if (job == null) return;
                 string role = job.Role ?? BlockFactory.RoleSingle;
                 var xf = br.BlockTransform;
-                foreach (var (kind, x) in GripDefs(job))
+                foreach (var (kind, x, radial) in GripDefs(job))
                 {
                     var axis = BlockFactory.Local(job, x + 1) - BlockFactory.Local(job, x);
                     if (axis.Length < 0.05 * job.Scale) continue;   // axis points at the viewer (end view)
@@ -114,7 +125,7 @@ namespace BoltToolApp.Cad
                     {
                         Kind = kind,
                         AxisLocal = axis.TransformBy(xf),
-                        GripPoint = BlockFactory.LocalPoint(job, role, x).TransformBy(xf)
+                        GripPoint = GripLocation(job, role, x, radial).TransformBy(xf)
                     };
                     grips.Add(g);
                 }
@@ -144,7 +155,7 @@ namespace BoltToolApp.Cad
             if (others.Count > 0) base.MoveGripPointsAt(entity, others, offset, bitFlags);
         }
 
-        static double SnapLength(BoltJob job, double target)
+        internal static double SnapLength(BoltJob job, double target)
         {
             var row = job.Row;
             double min = Math.Max(row.D * 0.5, 4);
@@ -183,7 +194,12 @@ namespace BoltToolApp.Cad
                     {
                         nj.ClampLength = Math.Max(0, Math.Round((job.ClampLength + delta) * 2) / 2);
                         if (Math.Abs(nj.ClampLength - job.ClampLength) < 1e-9) continue;
-                        if (!job.AutoLength) nj.Length = lay.BoltLength;
+                        if (!job.AutoLength)
+                        {
+                            // manual length: the bolt follows the nut side so the protrusion stays about the same
+                            double need = PartBuilder.ComputeLayout(nj).Required + Math.Max(0, lay.BoltLength - lay.Required);
+                            nj.Length = job.SnapLengthToStandard ? job.Table.NextStandardLength(need) : Math.Ceiling(need);
+                        }
                     }
                     AssemblyEditor.Apply(tr, br, nj);
                     var l2 = PartBuilder.ComputeLayout(nj);

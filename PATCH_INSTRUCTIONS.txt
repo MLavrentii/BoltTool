@@ -1,0 +1,27 @@
+BOLT TOOL - REPLACEMENT FILES (2026-11-11)
+
+This ZIP contains ONLY files added or modified relative to BoltTool_20261111.rar.
+Back up your existing project, then extract the ZIP into the PROJECT ROOT (the folder with BoltTool.csproj), overwriting the listed files.
+This includes the user-provided uncompiled v2 feature code in your existing project; this patch does not include a compiled DLL.
+For a clean standalone version, use BoltTool_20261111_reviewed_source.zip.
+Read REVIEW_20261111.md before building. Do not copy old bin/obj files.
+
+Changed files:
+BoltTool.csproj
+Cad/BlockFactory.cs
+Data/BoltJob.cs
+Geometry/PartBuilder.cs
+Geometry/StackMover.cs
+HANDOFF.md
+README.md
+REVIEW_20261111.md
+Torque/TorqueCalculator.cs
+UI/BoltToolWindow.xaml
+UI/BoltToolWindow.xaml.cs
+UI/Loc.cs
+UI/PreviewControl.cs
+UI/StackDiagramControl.cs
+build.bat
+install.bat
+tests/BoltTool.CoreTests.csproj
+tests/Program.cs

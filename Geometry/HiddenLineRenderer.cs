@@ -29,6 +29,7 @@ namespace BoltToolApp.Geometry
         public Mat3 View;
         public double MinX, MinY, MaxX, MaxY;
         public double CenterX, CenterY, Radius;     // view-independent frame: projected 3D centre + bounding sphere
+        public Vec3 Center3D;                       // centre of the bounding sphere in model space
         public P2 Project(Vec3 p) { var s = View.Apply(p); return new P2(s.X, s.Y); }
         public Vec3 ToViewer => View.Transposed().Apply(new Vec3(0, 0, 1));
     }
@@ -74,6 +75,7 @@ namespace BoltToolApp.Geometry
                 foreach (var v in mesh.V) rad = Math.Max(rad, (v - c3).Length);
                 var cs = R.Apply(c3);
                 d.CenterX = cs.X; d.CenterY = cs.Y; d.Radius = rad;
+                d.Center3D = c3;
             }
             double size = Math.Max(Math.Max(maxX - minX, maxY - minY), Math.Max(maxZ - minZ, 1e-6));
             double eps = 1e-4 * size;

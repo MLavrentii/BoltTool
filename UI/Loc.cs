@@ -78,7 +78,7 @@ namespace BoltToolApp.UI
             ["StdJis"] = "JIS dimensions (JIS B1180 / B1181 / B1256 …). Head and nut sizes differ from ISO for M10, M12, M14 and M22.",
             ["KindBox"] = "Which single part to create. For a complete bolted connection use the Assembly tab.",
             ["SizeBox"] = "Nominal thread size. Changing it loads the default length for that size.",
-            ["LengthBox"] = "Length under the head (for a threaded rod: total length). Pick a standard length or type any value.",
+            ["LengthBox"] = "Length under the head (for a threaded rod: total length). Pick a standard length or type any value. In an assembly with automatic length it shows the current length; choosing a value switches to manual.",
             ["SetDefaultBtn"] = "Remember the current length as the default for this size.",
             ["BaseBox"] = "Where the block origin 0,0,0 sits on the axis. Parts connect to each other at this point.",
             ["ThNone"] = "No thread lines – fastest and lightest block.",
@@ -118,7 +118,7 @@ namespace BoltToolApp.UI
             ["TqMatBox"] = "Material under the bolt head. It sets the allowed surface pressure.",
             ["TqMuG"] = "Friction coefficient in the thread. Filled from the lists above; you can type your own value.",
             ["TqMuK"] = "Friction coefficient under the head or nut. Filled from the lists above; you can type your own value.",
-            ["TqUtil"] = "How much of the bolt's yield strength is used by the preload. 90 % is the usual design value.",
+            ["TqUtil"] = "Set preload as a percentage of bolt yield strength. The 90 % (VDI) and 70 % (JIS-style) defaults are examples only; verify the joint design.",
             ["TqWasher"] = "A washer spreads the load, which lowers the surface pressure on the clamped part.",
             ["TqGrid"] = "Preload and tightening torque for every size with the same class, friction and utilisation.",
             ["ShowWipeToggle"] = "Show or hide the wipeout areas in this preview only.",
@@ -126,8 +126,23 @@ namespace BoltToolApp.UI
             ["UpdateBtn"] = "Apply these settings to the block you selected with BOLTEDIT.",
             ["MakeBtn"] = "Only create the block definition, without placing it.",
             ["ResetBtn"] = "Put all settings back to the defaults.",
+            ["PresetStdBtn"] = "Head | washer | parts | washer | spring washer | nut – the usual arrangement.",
+            ["PresetDblBtn"] = "Two equal nuts tightened against each other, no spring washer.",
+            ["PresetBothBtn"] = "Spring washer and plain washer under the head and under the nut.",
+            ["PresetTapBtn"] = "The bolt goes into a threaded hole: only washer and spring washer under the head.",
+            ["PresetChanBtn"] = "Fixing to a 41 mm strut channel (ダクターチャンネル): spring washer + large washer under the head, channel nut inside the channel. Set the clamp length to bracket + channel lip thickness.",
+            ["PresetSortBtn"] = "Put the elements into the usual order: washer against the part, then spring washer, then nut, thin nut last.",
+            ["AddHeadBox"] = "Add a washer or nut between the bolt head and the clamped parts.",
+            ["AddNutBox"] = "Add a washer or nut behind the clamped parts.",
+            ["ProtMmBox"] = "The same protrusion in millimetres. Type a distance and it is converted to pitches.",
+            ["StackDiagram1"] = "Side view of the connection: order of the elements, free gaps, clamp length, protrusion and bolt length.",
+            ["StackDiagram2"] = "Side view of the connection: order of the elements, free gaps, clamp length, protrusion and bolt length.",
+            ["TqMethodBox"] = "Both use a torque-versus-preload relation. The JIS coefficient option uses a user-selected preload percentage (70% is only a default assumption, not a prescribed JIS requirement). Use verified friction and manufacturer instructions.",
+            ["SnapshotBtn"] = "Save the preview exactly as shown, with its dimensions, as a JPG picture.",
+            ["FitViewBtn"] = "Fit all current parts into the preview and reset zoom / pan. Other settings never change the camera automatically.",
+            ["TqClassInfo"] = "Where this property class is typically used.",
             ["ViewSnapCheck"] = "While you orbit with the mouse or joystick, the view catches on side / end / top views and on 30°, 35.26° (isometric), 45° and 60°. Arrow keys never snap.",
-            ["ResetOffsetsBtn"] = "Put every washer and nut back to its normal stacked position.",
+            ["ResetOffsetsBtn"] = "Remove every free gap so each element touches the one before it. The clamp length stays.",
             ["DistBox"] = "Distance from the bolt head to the nearest selected part. Enter = apply, Esc = cancel.",
         };
 
@@ -178,6 +193,18 @@ namespace BoltToolApp.UI
             ["Thin nut"] = "薄ナット",
             ["Plain washer"] = "平座金",
             ["Large washer"] = "大形平座金",
+            ["Channel nut (for 41 channel)"] = "チャンネルナット (ダクター 41 用)",
+            ["Channel nut + holder (wing nut + fixing block)"] = "翼型ナット + 固定ブロック",
+            ["nut L"] = "ナット長さ",
+            ["nut W"] = "ナット幅",
+            ["nut t"] = "ナット厚",
+            ["plate"] = "ブロック板厚",
+            ["lip"] = "リップ厚",
+            ["Channel nut set"] = "チャンネルナット構成",
+            ["length"] = "長さ",
+            ["width"] = "幅",
+            ["Fixing to a 41 mm strut channel (ダクターチャンネル): spring washer + large washer under the head, channel nut inside the channel. Set the clamp length to bracket + channel lip thickness."] =
+                "41 mm ダクターチャンネルへの固定: 頭側にばね座金 + 大形平座金、チャンネル内にチャンネルナット。締付け長さは金具 + チャンネルのリップ厚に設定してください。",
             ["Spring lock washer"] = "ばね座金",
 
             // base points
@@ -301,6 +328,8 @@ namespace BoltToolApp.UI
             ["Loaded from the selected block. Change anything and press “Update selected block”."] =
                 "選択ブロックから読み込みました。変更して「選択ブロックを更新」を押してください。",
             ["Nothing to undo."] = "元に戻す操作はありません。",
+            ["Bolt length is now manual. Tick “Choose standard length automatically” on the Assembly tab to go back."] =
+                "ボルト長さを手動にしました。自動に戻すには「組立」タブの「標準長さを自動選択」をオンにしてください。",
             ["Nothing to redo."] = "やり直す操作はありません。",
             ["Undone."] = "元に戻しました。",
             ["Redone."] = "やり直しました。",
@@ -308,6 +337,21 @@ namespace BoltToolApp.UI
             // moving parts, view snap
             ["Snap to standard view angles while orbiting"] = "回転時に標準の視点角度へスナップ",
             ["Snap view angles"] = "視点角度スナップ",
+            ["Fit view"] = "全体表示",
+            ["Automatic length: edit clamped parts or washers; choose a value to switch to manual."] =
+                "自動長さ：被締結部材や座金を変更すると長さが再計算されます。長さを選ぶと手動に切り替わります。",
+            ["Manual length: choose another value, or enable automatic length on the Assembly tab."] =
+                "手動長さ：別の長さを選ぶか、組立タブで自動長さを有効にしてください。",
+            ["Choose a standard length or enter an exact length in mm."] =
+                "規格長さを選ぶか、任意の長さ（mm）を入力してください。",
+            ["Drag to change clamped thickness; nut-side parts and bolt length follow."] =
+                "ドラッグすると締付け厚さが変わり、ナット側の部品とボルト長さが追従します。",
+            ["Drag to change the bolt length / protrusion."] =
+                "ドラッグするとボルト長さ・突出し長さが変わります。",
+            ["Tightening torque (estimate)"] = "締付けトルク（概算）",
+            ["Mechanical estimate – NOT a terminal torque"] = "機械的な概算値（端子の締付けトルクではありません）",
+            ["Electrical terminal / busbar: this is ONLY a mechanical bolt estimate, NOT a tightening instruction. Follow the equipment or terminal manufacturer's specified torque, contact treatment, bolt/washer hardware and maintenance instructions. The electrical connection may be damaged even below the calculated bolt torque."] =
+                "電気端子・母線：これはボルトの機械的な概算値であり、締付け指示値ではありません。機器・端子メーカーが指定する締付けトルク、接触面処理、ボルト・座金構成および保守方法に従ってください。計算値以下でも電気接続部を損傷するおそれがあります。",
             ["Hex spin 0° shows the hex across corners, 30° across flats. View presets and angle snapping are in the bar under the preview."] =
                 "六角の回転 0° は対角、30° は二面幅が見える向きです。視点プリセットと角度スナップはプレビュー下のバーにあります。",
             ["Part positions"] = "部品の位置",
@@ -322,6 +366,180 @@ namespace BoltToolApp.UI
             ["Distance from the bolt head to the nearest selected part. Enter = apply, Esc = cancel."] =
                 "ボルト頭から最も近い選択部品までの距離。Enter = 確定、Esc = キャンセル。",
 
+            // elements on the bolt, measuring, torque methods (v2)
+            ["Head | washer | parts | washer | spring washer | nut – the usual arrangement."] =
+                "頭 | 座金 | 部材 | 座金 | ばね座金 | ナット – 一般的な構成。",
+            ["Two equal nuts tightened against each other, no spring washer."] =
+                "同じナット 2 個を互いに締め付けるダブルナット。ばね座金なし。",
+            ["Spring washer and plain washer under the head and under the nut."] =
+                "頭側とナット側の両方にばね座金と平座金。",
+            ["The bolt goes into a threaded hole: only washer and spring washer under the head."] =
+                "ボルトをめねじ穴に締める場合: 頭側に座金とばね座金のみ。",
+            ["Put the elements into the usual order: washer against the part, then spring washer, then nut, thin nut last."] =
+                "要素を一般的な順序に並べ替え: 部材側から座金、ばね座金、ナット、最後に薄ナット。",
+            ["Add a washer or nut between the bolt head and the clamped parts."] =
+                "ボルト頭と被締結部材の間に座金またはナットを追加。",
+            ["Add a washer or nut behind the clamped parts."] =
+                "被締結部材の後ろ (ナット側) に座金またはナットを追加。",
+            ["The same protrusion in millimetres. Type a distance and it is converted to pitches."] =
+                "同じ突出し量を mm で表示。距離を入力するとピッチ数に換算されます。",
+            ["Side view of the connection: order of the elements, free gaps, clamp length, protrusion and bolt length."] =
+                "締結の側面図: 要素の順序、すき間、締付け長さ、突出し量、ボルト長さ。",
+            ["VDI 2230 is the European / ISO way. JIS B 1083 is the Japanese torque-coefficient way (T = K·d·F). Both use the same torque formula; they differ in how much preload is allowed."] =
+                "VDI 2230 は欧州 / ISO の方法、JIS B 1083 は日本のトルク係数法 (T = K·d·F)。トルクの式は同じで、許容する軸力の決め方が異なります。",
+            ["Save the preview exactly as shown, with its dimensions, as a JPG picture."] =
+                "プレビューを表示どおり (寸法付き) JPG 画像として保存。",
+            ["Where this property class is typically used."] =
+                "この強度区分が一般的に使われる用途。",
+            ["Elements on the bolt"] =
+                "ボルト上の要素",
+            ["The list is the real order on the bolt, from the head to the end. T = thickness, Ø = outer diameter, gap = free space in front of the element (all in mm). Type a value to change it; clear the box to go back to the standard."] =
+                "リストはボルト上の実際の順序 (頭から先端へ) です。T = 厚さ、Ø = 外径、すき間 = 要素の手前の空き (すべて mm)。値を入力すると変更、空欄にすると標準値に戻ります。",
+            ["Usual set"] =
+                "標準構成",
+            ["Double nut"] =
+                "ダブルナット",
+            ["Spring both sides"] =
+                "両側にばね座金",
+            ["Sort to usual order"] =
+                "標準の順序に並べ替え",
+            ["Thread sticking out beyond the last nut"] =
+                "最後のナットからのねじ突出し量",
+            ["pitches"] =
+                "ピッチ",
+            ["Each part gets its own block with its connection point at the contact face. In the drawing: drag ▶ on the bolt tip to change only the bolt length; drag ▶ on the first nut-side element to move the whole nut side (clamp length) – the bolt length follows."] =
+                "各部品は接触面を接続点とする個別ブロックになります。図面上では、ボルト先端の ▶ でボルト長さのみ変更、ナット側最初の要素の ▶ でナット側全体 (締付け長さ) を移動し、ボルト長さも追従します。",
+            ["In the preview, hold Ctrl and drag a washer or nut to move it along the bolt; it stops when it touches the next element. Pull it further and a green outline shows where it will land – release to swap places. Ctrl+click several parts to move them together. Red numbers are the distances – click one to type an exact value."] =
+                "プレビュー上で Ctrl を押しながら座金やナットをドラッグするとボルトに沿って移動し、隣の要素に当たると止まります。さらに引くと移動先が緑の輪郭で表示され、離すと入れ替わります。Ctrl+クリックで複数選択すると一緒に動きます。赤い数値は距離で、クリックすると正確な値を入力できます。",
+            ["Close all gaps"] =
+                "すき間をすべて詰める",
+            ["Order and distances on the bolt"] =
+                "ボルト上の順序と距離",
+            ["＋ Add on the head side…"] =
+                "＋ 頭側に追加…",
+            ["＋ Add on the nut side…"] =
+                "＋ ナット側に追加…",
+            ["Flange nut (nut with washer face)"] =
+                "フランジナット (座付きナット)",
+            ["Head top – middle of the head, outside"] =
+                "頭部上面 – 頭の外側中心",
+            ["Head-side contact face – where the head / its washers press on the part"] =
+                "頭側の接触面 – 頭または頭側座金が部材を押さえる面",
+            ["Nut-side contact face – where the nut-side washers / nut press on the part"] =
+                "ナット側の接触面 – ナット側の座金・ナットが部材を押さえる面",
+            ["Bolt tip (thread end)"] =
+                "ボルト先端 (ねじ先)",
+            ["flange Ø"] =
+                "フランジ径",
+            ["sticks out {0} mm beyond the last element"] =
+                "最後の要素から {0} mm 突出",
+            ["clamp {0} mm"] =
+                "締付け {0} mm",
+            ["Elements (thickness × outer Ø):"] =
+                "要素 (厚さ × 外径):",
+            ["▦ Clamped parts – {0} mm"] =
+                "▦ 被締結部材 – {0} mm",
+            ["● Bolt head"] =
+                "● ボルト頭",
+            ["● Bolt end"] =
+                "● ボルト先端",
+            ["Element"] =
+                "要素",
+            ["gap"] =
+                "すき間",
+            ["Kind of washer or nut. Change it with the list in each row."] =
+                "座金・ナットの種類。各行のリストで変更できます。",
+            ["Thickness in mm. Clear the box to use the standard thickness."] =
+                "厚さ (mm)。空欄にすると標準の厚さになります。",
+            ["Outer diameter in mm (washers, spring washer, flange). Clear the box to use the standard."] =
+                "外径 (mm) – 座金、ばね座金、フランジ。空欄にすると標準値になります。",
+            ["Free space before this element (mm). For the first nut-side element this is empty space AFTER the clamped plates; edit Clamp length separately."] =
+                "この部品の手前の空き距離（mm）。ナット側の最初の部品は被締結部材の後の空き距離です。部材の厚さは「締付け長さ」で別に設定します。",
+            ["Move toward the bolt head"] =
+                "ボルト頭側へ移動",
+            ["Move toward the bolt end"] =
+                "ボルト先端側へ移動",
+            ["Remove this element"] =
+                "この要素を削除",
+            ["Clamp"] =
+                "締付け長さ",
+            ["clamp"] =
+                "締付け",
+            ["out"] =
+                "突出",
+            ["Saved {0}"] =
+                "保存しました: {0}",
+            ["Could not save the picture: {0}"] =
+                "画像を保存できませんでした: {0}",
+            ["Save JPG"] =
+                "JPG 保存",
+            ["Shift+click two points = measure · drag a blue ▶ = change length / clamp · Esc = clear"] =
+                "Shift+2 点クリック = 寸法測定 · 青い ▶ をドラッグ = 長さ / 締付け長さを変更 · Esc = 解除",
+            ["Ctrl+click = select a part · Ctrl+drag = move it along the bolt (pull past a neighbour to swap places) · click a red distance to type a value"] =
+                "Ctrl+クリック = 部品を選択 · Ctrl+ドラッグ = ボルトに沿って移動 (隣を越えて引くと入れ替え) · 赤い距離をクリックして数値入力",
+            ["Calculation method"] =
+                "計算方法",
+            ["VDI 2230 – Europe / ISO practice"] =
+                "VDI 2230 – 欧州 / ISO の方法",
+            ["JIS B 1083 – simplified coefficient estimate (Japan)"] =
+                "JIS B 1083 – 簡易トルク係数による概算 (日本)",
+            ["Class {0}: "] =
+                "強度区分 {0}: ",
+            ["(Typical practice – follow the drawing or specification of the project.)"] =
+                "(一般的な目安です。図面・仕様書の指定に従ってください。)",
+            ["Ordinary bolts for light, non-critical fixing: covers, brackets, ducts, cable racks, secondary steel members."] =
+                "軽負荷で重要度の低い固定用の普通ボルト: カバー、ブラケット、ダクト、ケーブルラック、二次部材。",
+            ["The usual ordinary bolt (中ボルト) in Japan and for general hardware: frames, stands, secondary steel members. Not for the main friction joints of a steel frame."] =
+                "日本で一般的な中ボルト: 架台、スタンド、二次部材など。鉄骨主要部の摩擦接合には使用しません。",
+            ["Ductile low-carbon bolts, e.g. flanges and pressure equipment where toughness matters more than strength."] =
+                "延性のある低炭素鋼ボルト。強度よりじん性が重要なフランジや圧力機器など。",
+            ["General machinery and equipment with medium loads."] =
+                "中程度の荷重の一般機械・装置。",
+            ["The standard high-tensile bolt: machinery, equipment bases, conveyors, structural bolting in European / ISO practice."] =
+                "標準的な高強度ボルト: 機械、装置ベース、コンベヤ、欧州 / ISO 方式の構造用ボルト。",
+            ["Highly loaded machine joints, vehicles, cranes. Main joints of Japanese steel frames (H-beams) use high-strength sets F10T / S10T of similar strength, but those are tightened by the JASS 6 procedure, not by a torque from this calculator."] =
+                "高荷重の機械締結、車両、クレーン。日本の鉄骨 (H 形鋼) 主要接合部には同程度の強度の高力ボルト F10T / S10T を使いますが、締付けは JASS 6 の手順によるもので、この計算のトルクでは行いません。",
+            ["Socket head cap screws for moulds, dies, tooling and compact high-load joints. Avoid plated 12.9 and outdoor use (hydrogen embrittlement)."] =
+                "金型、治具、小型高荷重部の六角穴付きボルト。めっき品や屋外使用は避けます (水素ぜい化)。",
+            ["Soft stainless: light outdoor, food and chemical equipment with low loads."] =
+                "軟質ステンレス: 低荷重の屋外・食品・化学機器。",
+            ["The usual stainless bolt (SUS304 / SUS316): outdoor, food, chemical and marine equipment. Lubricate to avoid galling."] =
+                "一般的なステンレスボルト (SUS304 / SUS316): 屋外、食品、化学、船舶機器。焼付き防止のため潤滑してください。",
+            ["High-strength stainless for marine and chemical plant joints. Lubricate to avoid galling."] =
+                "船舶・化学プラント用の高強度ステンレス。焼付き防止のため潤滑してください。",
+            ["Electrical joint (busbar / terminal): tighten to the torque given by the equipment or terminal maker – it is set for contact pressure and heating, not for bolt strength. The value above is only the mechanical limit of the bolt. Copper and aluminium creep: use a plain washer plus a spring or conical washer and re-check the torque."] =
+                "電気接続 (ブスバー / 端子): 機器・端子メーカー指定のトルクで締め付けてください。指定値は接触圧と発熱から決められており、ボルト強度によるものではありません。上の値はボルトの機械的な上限にすぎません。銅・アルミはクリープするため、平座金とばね座金または皿ばね座金を併用し、増し締めを確認してください。",
+            ["Torque T = F·(0.16P + 0.58·d2·μG + μK·D_Km/2) = K·d·F. VDI 2230: preload F at the chosen utilisation of the yield point by the combined tension + torsion stress (usually 90 %). JIS B 1083: F = utilisation × yield × stress area (usually 60–70 %). Friction values and surface pressures are typical – use the supplier's data for critical joints. min / max = μ ± 0.02."] =
+                "トルク T = F·(0.16P + 0.58·d2·μG + μK·D_Km/2) = K·d·F。VDI 2230: 引張 + ねじりの相当応力が降伏点の指定割合 (通常 90 %) になる軸力 F。JIS B 1083: F = 利用率 × 降伏点 × 有効断面積 (通常 60–70 %)。摩擦係数と許容面圧は代表値です – 重要な締結にはメーカーの値を使用してください。min / max = μ ± 0.02。",
+            ["SS400 – rolled steel (JIS G 3101)"] =
+                "SS400 – 一般構造用圧延鋼材 (JIS G 3101)",
+            ["SM490 / SN490 – structural steel"] =
+                "SM490 / SN490 – 構造用鋼",
+            ["S45C – carbon steel"] =
+                "S45C – 機械構造用炭素鋼",
+            ["SCM440 – alloy steel"] =
+                "SCM440 – クロムモリブデン鋼",
+            ["SUS304 – stainless"] =
+                "SUS304 – ステンレス",
+            ["FC250 – grey cast iron"] =
+                "FC250 – ねずみ鋳鉄",
+            ["FCD450 – ductile cast iron"] =
+                "FCD450 – ダクタイル鋳鉄",
+            ["A5052 – aluminium plate"] =
+                "A5052 – アルミ板",
+            ["A6063-T5 – aluminium extrusion"] =
+                "A6063-T5 – アルミ押出形材",
+            ["ADC12 – aluminium die casting"] =
+                "ADC12 – アルミダイカスト",
+            ["C1100 – copper busbar / terminal"] =
+                "C1100 – 銅ブスバー / 端子",
+            ["C2801 / C3604 – brass terminal"] =
+                "C2801 / C3604 – 黄銅端子",
+            ["A1050 / A6101 – aluminium busbar"] =
+                "A1050 / A6101 – アルミブスバー",
+            ["Remove every free gap so each element touches the one before it. The clamp length stays."] =
+                "すき間をすべてなくし、各要素を前の要素に密着させます。締付け長さは変わりません。",
+
             // tooltips
             ["Language of this window."] = "このウィンドウの表示言語。",
             ["ISO dimensions (ISO 4014 / 4017 / 4032 / 7089 …)."] = "ISO 寸法 (ISO 4014 / 4017 / 4032 / 7089 など)。",
@@ -330,8 +548,8 @@ namespace BoltToolApp.UI
             ["Which single part to create. For a complete bolted connection use the Assembly tab."] =
                 "作成する単品部品。ボルト締結一式は「組立」タブを使用します。",
             ["Nominal thread size. Changing it loads the default length for that size."] = "ねじの呼び径。変更するとそのサイズの既定長さが入ります。",
-            ["Length under the head (for a threaded rod: total length). Pick a standard length or type any value."] =
-                "首下長さ (寸切りボルトは全長)。標準長さから選ぶか、任意の値を入力します。",
+            ["Length under the head (for a threaded rod: total length). Pick a standard length or type any value. In an assembly with automatic length it shows the current length; choosing a value switches to manual."] =
+                "首下長さ (寸切りボルトは全長)。標準長さから選ぶか、任意の値を入力します。組立で自動長さのときは現在の長さを表示し、値を選ぶと手動に切り替わります。",
             ["Remember the current length as the default for this size."] = "現在の長さをこのサイズの既定値として保存します。",
             ["Where the block origin 0,0,0 sits on the axis. Parts connect to each other at this point."] =
                 "ブロック原点 0,0,0 の軸上の位置。部品同士はこの点で接続します。",
@@ -389,8 +607,8 @@ namespace BoltToolApp.UI
                 "ねじ面の摩擦係数。上のリストから自動入力されますが、任意の値も入力できます。",
             ["Friction coefficient under the head or nut. Filled from the lists above; you can type your own value."] =
                 "座面の摩擦係数。上のリストから自動入力されますが、任意の値も入力できます。",
-            ["How much of the bolt's yield strength is used by the preload. 90 % is the usual design value."] =
-                "軸力がボルトの降伏強さの何 % を使うか。通常の設計値は 90 % です。",
+            ["Set preload as a percentage of bolt yield strength. The 90 % (VDI) and 70 % (JIS-style) defaults are examples only; verify the joint design."] =
+                "ボルトの降伏強さに対する軸力の割合を指定します。VDIの90%、JIS方式の70%は例示値です。締結部の設計条件を確認してください。",
             ["A washer spreads the load, which lowers the surface pressure on the clamped part."] =
                 "座金は荷重を分散し、部材の面圧を下げます。",
             ["Preload and tightening torque for every size with the same class, friction and utilisation."] =

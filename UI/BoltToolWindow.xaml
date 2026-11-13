@@ -135,11 +135,10 @@
 
         <!-- flat tabs -->
         <Style TargetType="TabItem">
-            <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="b" Padding="14,9" BorderThickness="0,0,0,2" BorderBrush="Transparent" Background="Transparent">
+                        <Border x:Name="b" Padding="14,9" BorderThickness="0,0,0,2" BorderBrush="Transparent" Background="Transparent" Cursor="Hand">
                             <ContentPresenter x:Name="c" ContentSource="Header" HorizontalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -224,6 +223,7 @@
                                     <StackPanel Grid.Column="2" x:Name="LengthPanel">
                                         <TextBlock Text="Length L (mm)" Style="{StaticResource Label}"/>
                                         <ComboBox x:Name="LengthBox" IsEditable="True" SelectionChanged="OnChanged" LostFocus="OnChanged"/>
+                                        <TextBlock x:Name="LengthModeText" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="11" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Grid>
                                 <DockPanel x:Name="DefaultPanel" Margin="0,6,0,0">
@@ -266,47 +266,43 @@
                                     <TextBlock Text="Clamp length – total thickness of the joined parts (mm)" Style="{StaticResource Label}"/>
                                     <TextBox x:Name="ClampBox" LostFocus="OnChanged" KeyDown="OnEnterKey"/>
 
-                                    <Grid>
+                                    <TextBlock Text="Elements on the bolt" Style="{StaticResource Section}"/>
+                                    <TextBlock Style="{StaticResource Hint}"
+                                               Text="The list is the real order on the bolt, from the head to the end. T = thickness, Ø = outer diameter, gap = free space in front of the element (all in mm). Type a value to change it; clear the box to go back to the standard."/>
+                                    <WrapPanel Margin="0,8,0,0">
+                                        <Button x:Name="PresetStdBtn" Style="{StaticResource Chip}" Content="Usual set" Tag="std" Click="OnStackPreset"/>
+                                        <Button x:Name="PresetDblBtn" Style="{StaticResource Chip}" Content="Double nut" Tag="dbl" Click="OnStackPreset"/>
+                                        <Button x:Name="PresetBothBtn" Style="{StaticResource Chip}" Content="Spring both sides" Tag="both" Click="OnStackPreset"/>
+                                        <Button x:Name="PresetTapBtn" Style="{StaticResource Chip}" Content="No nut (tapped hole)" Tag="tap" Click="OnStackPreset"/>
+                                        <Button x:Name="PresetChanBtn" Style="{StaticResource Chip}" Content="Channel nut set" Tag="chan" Click="OnStackPreset"/>
+                                        <Button x:Name="PresetSortBtn" Style="{StaticResource Chip}" Content="Sort to usual order" Tag="sort" Click="OnStackPreset"/>
+                                    </WrapPanel>
+                                    <Border BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="8,6" Margin="0,4,0,0" Background="#FBFCFE">
+                                        <StackPanel x:Name="StackList"/>
+                                    </Border>
+                                    <Grid Margin="0,8,0,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="12"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel>
-                                            <TextBlock Text="Washer under head" Style="{StaticResource Label}"/>
-                                            <ComboBox x:Name="HeadWasherBox" SelectionChanged="OnChanged"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2">
-                                            <TextBlock Text="Washer under nut" Style="{StaticResource Label}"/>
-                                            <ComboBox x:Name="NutWasherBox" SelectionChanged="OnChanged"/>
-                                        </StackPanel>
+                                        <ComboBox x:Name="AddHeadBox" SelectionChanged="OnAddElement"/>
+                                        <ComboBox x:Name="AddNutBox" Grid.Column="2" SelectionChanged="OnAddElement"/>
                                     </Grid>
-
-                                    <TextBlock Text="Spring lock washer – stick to" Style="{StaticResource Label}"/>
-                                    <ComboBox x:Name="SpringBox" SelectionChanged="OnChanged"/>
-
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="12"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel>
-                                            <TextBlock Text="Nut type" Style="{StaticResource Label}"/>
-                                            <ComboBox x:Name="NutKindBox" SelectionChanged="OnChanged"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2">
-                                            <TextBlock Text="Nuts" Style="{StaticResource Label}"/>
-                                            <ComboBox x:Name="NutCountBox" SelectionChanged="OnChanged"/>
-                                        </StackPanel>
-                                    </Grid>
+                                    <Border Background="#F7F9FC" CornerRadius="8" BorderBrush="{StaticResource Line}" BorderThickness="1" Margin="0,10,0,0">
+                                        <ui:StackDiagramControl x:Name="StackDiagram1" Height="150"/>
+                                    </Border>
 
                                     <TextBlock Text="Bolt length" Style="{StaticResource Section}"/>
                                     <CheckBox x:Name="AutoLenCheck" Content="Choose standard length automatically" Checked="OnChanged" Unchecked="OnChanged"/>
-                                    <DockPanel Margin="0,8,0,0">
-                                        <TextBox x:Name="ProtrusionBox" Width="60" DockPanel.Dock="Left" LostFocus="OnChanged" KeyDown="OnEnterKey"/>
-                                        <TextBlock Text="  thread pitches must stick out of the nut" Style="{StaticResource Hint}" VerticalAlignment="Center"/>
-                                    </DockPanel>
+                                    <TextBlock Text="Thread sticking out beyond the last nut" Style="{StaticResource Label}"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBox x:Name="ProtrusionBox" Width="60" LostFocus="OnChanged" KeyDown="OnEnterKey"/>
+                                        <TextBlock Text="pitches" Margin="6,0,10,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}"/>
+                                        <TextBlock Text="=" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}"/>
+                                        <TextBox x:Name="ProtMmBox" Width="60" LostFocus="OnProtMm" KeyDown="OnEnterKey"/>
+                                        <TextBlock Text="mm" Margin="6,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}"/>
+                                    </StackPanel>
                                     <Border Style="{StaticResource Stat}" Margin="0,12,0,0">
                                         <TextBlock x:Name="AsmResult" TextWrapping="Wrap"/>
                                     </Border>
@@ -315,12 +311,12 @@
                                     <CheckBox x:Name="SeparateCheck" Content="Separate block per part (linked set)" Checked="OnChanged" Unchecked="OnChanged"/>
                                     <CheckBox x:Name="StickCheck" Content="Nut side follows the bolt end when the length grip is dragged" Checked="OnChanged" Unchecked="OnChanged"/>
                                     <TextBlock Style="{StaticResource Hint}"
-                                               Text="Each part gets its own block with its connection point at the contact face. Drag ▶ on the bolt end to change length, ▶ on the nut to change the clamp length."/>
+                                               Text="Each part gets its own block with its connection point at the contact face. In the drawing: drag ▶ on the bolt tip to change only the bolt length; drag ▶ on the first nut-side element to move the whole nut side (clamp length) – the bolt length follows."/>
 
                                     <TextBlock Text="Part positions" Style="{StaticResource Section}"/>
                                     <TextBlock Style="{StaticResource Hint}"
-                                               Text="In the preview, hold Ctrl and drag a washer or nut to move it along the bolt. Ctrl+click several parts to move them together. The red number is the distance from the bolt head – click it to type an exact value."/>
-                                    <Button x:Name="ResetOffsetsBtn" Style="{StaticResource Chip}" Content="Reset part positions" Click="OnResetOffsets" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+                                               Text="In the preview, hold Ctrl and drag a washer or nut to move it along the bolt; it stops when it touches the next element. Pull it further and a green outline shows where it will land – release to swap places. Ctrl+click several parts to move them together. Red numbers are the distances – click one to type an exact value."/>
+                                    <Button x:Name="ResetOffsetsBtn" Style="{StaticResource Chip}" Content="Close all gaps" Click="OnResetOffsets" HorizontalAlignment="Left" Margin="0,8,0,0"/>
                                 </StackPanel>
                             </StackPanel>
                         </ScrollViewer>
@@ -330,6 +326,11 @@
                     <TabItem Header="View &amp; Block">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="0,0,6,16">
+                                <TextBlock x:Name="DiagramTitle2" Text="Order and distances on the bolt" Style="{StaticResource Label}"/>
+                                <Border x:Name="DiagramBorder2" Background="#F7F9FC" CornerRadius="8" BorderBrush="{StaticResource Line}" BorderThickness="1">
+                                    <ui:StackDiagramControl x:Name="StackDiagram2" Height="150"/>
+                                </Border>
+                                <TextBlock x:Name="SizesText" Style="{StaticResource Hint}"/>
                                 <TextBlock Text="Output" Style="{StaticResource Label}"/>
                                 <StackPanel Orientation="Horizontal">
                                     <RadioButton x:Name="Out2D" Content="2D view" Style="{StaticResource Seg}" GroupName="out" Checked="OnChanged"/>
@@ -388,6 +389,8 @@
                     <TabItem Header="Torque">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="0,0,6,16">
+                                <TextBlock Text="Calculation method" Style="{StaticResource Label}"/>
+                                <ComboBox x:Name="TqMethodBox" SelectionChanged="OnTorqueMethod"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -403,6 +406,9 @@
                                         <ComboBox x:Name="TqClassBox" SelectionChanged="OnTorque"/>
                                     </StackPanel>
                                 </Grid>
+                                <Border Style="{StaticResource Stat}" Margin="0,8,0,0">
+                                    <TextBlock x:Name="TqClassInfo" TextWrapping="Wrap" FontSize="12"/>
+                                </Border>
                                 <TextBlock Text="Bolt / nut surface" Style="{StaticResource Label}"/>
                                 <ComboBox x:Name="TqFinishBox" SelectionChanged="OnTorqueMu"/>
                                 <TextBlock Text="Lubrication" Style="{StaticResource Label}"/>
@@ -435,7 +441,7 @@
                                 <WrapPanel Margin="0,14,0,0">
                                     <Border Style="{StaticResource Stat}" MinWidth="170">
                                         <StackPanel>
-                                            <TextBlock Text="Tightening torque" Foreground="{StaticResource Muted}" FontSize="11.5"/>
+                                            <TextBlock x:Name="TqTorqueLabel" Text="Tightening torque" Foreground="{StaticResource Muted}" FontSize="11.5" TextWrapping="Wrap"/>
                                             <TextBlock x:Name="TqTorque" FontSize="24" FontWeight="SemiBold" Foreground="{StaticResource AccentDark}"/>
                                             <TextBlock x:Name="TqRange" Foreground="{StaticResource Muted}" FontSize="11.5"/>
                                         </StackPanel>
@@ -451,6 +457,9 @@
                                 <Border x:Name="TqPressureBorder" Style="{StaticResource Stat}">
                                     <TextBlock x:Name="TqPressure" TextWrapping="Wrap" FontSize="12"/>
                                 </Border>
+                                <Border x:Name="TqNoteBorder" Style="{StaticResource Stat}" Background="#FEF3C7" Visibility="Collapsed">
+                                    <TextBlock x:Name="TqNote" TextWrapping="Wrap" FontSize="12"/>
+                                </Border>
 
                                 <TextBlock Text="All sizes – same conditions" Style="{StaticResource Section}"/>
                                 <DataGrid x:Name="TqGrid" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
@@ -465,7 +474,7 @@
                                     </DataGrid.Columns>
                                 </DataGrid>
                                 <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,0"
-                                           Text="Simplified VDI 2230-1: preload at 90 % yield utilisation (equivalent stress), M_A = F_M·(0.16P + 0.58·d2·μG + μK·D_Km/2). Friction values are typical – use the supplier's data for critical joints. min / max = μ ± 0.02."/>
+                                           Text="Torque T = F·(0.16P + 0.58·d2·μG + μK·D_Km/2) = K·d·F. VDI 2230: preload F at the chosen utilisation of the yield point by the combined tension + torsion stress (usually 90 %). JIS B 1083: F = utilisation × yield × stress area (usually 60–70 %). Friction values and surface pressures are typical – use the supplier's data for critical joints. min / max = μ ± 0.02."/>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
@@ -482,6 +491,8 @@
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
                             <CheckBox x:Name="ViewSnapCheck" Content="Snap view angles" Margin="14,4,0,0" Checked="OnChanged" Unchecked="OnChanged"/>
                             <CheckBox x:Name="ShowWipeToggle" Content="Show wipeouts" IsChecked="True" Margin="14,4,0,0" Click="OnShowWipe"/>
+                            <Button x:Name="FitViewBtn" Style="{StaticResource Chip}" Content="Fit view" Click="OnFitView" Margin="14,0,0,0"/>
+                            <Button x:Name="SnapshotBtn" Style="{StaticResource Chip}" Content="Save JPG" Click="OnSnapshot"/>
                         </StackPanel>
                         <WrapPanel>
                             <Button Style="{StaticResource Chip}" Content="Side" Tag="0,0" Click="OnPreset"/>

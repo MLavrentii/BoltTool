@@ -7,7 +7,22 @@ namespace BoltToolApp.Data
 {
     public enum ThreadStyle { None, Simplified, Detailed }
     public enum OutputMode { View2D, Mesh3D, Solid3D }
-    public enum BasePoint { HeadTop, UnderHead, ThreadEnd, BearingFace, OuterFace, Center }
+    public enum BasePoint { HeadTop, UnderHead, ThreadEnd, BearingFace, OuterFace, Center, ClampHead, ClampNut }
+    public enum StackSide { Head, Nut }
+
+    /// <summary>One washer / nut on the bolt. The list order is the physical order from the head to the bolt end.</summary>
+    public class StackItem
+    {
+        public string Id { get; set; }
+        public PartKind Kind { get; set; } = PartKind.PlainWasher;
+        public StackSide Side { get; set; } = StackSide.Nut;   // which side of the clamped parts
+        /// <summary>Free axial space immediately before this element (mm). The first nut-side
+        /// gap is the space AFTER the clamped material; ClampLength stores the solid material
+        /// thickness separately, so editing gaps never changes the plate thickness.</summary>
+        public double Gap { get; set; }
+        public double Thickness { get; set; }                  // 0 = standard value of the size
+        public double OuterD { get; set; }                     // 0 = standard (washers, spring washer, flange)
+    }
     public enum WasherChoice { None, Plain, Large }
     public enum SpringPosition { None, UnderNut, UnderHead }
 
@@ -33,8 +48,8 @@ namespace BoltToolApp.Data
         public bool AutoLength { get; set; } = true;       // choose the next standard length
         public double MinProtrusionPitches { get; set; } = 2; // thread pitches beyond the last nut
         public bool SeparateBlocks { get; set; } = true;   // one block per part, inserted as a linked set
-        /// <summary>Manual axial shift per part role (mm), set with Ctrl+drag in the preview.</summary>
-        public Dictionary<string, double> Offsets { get; set; } = new();
+        /// <summary>Washers and nuts on the bolt in physical order (head -> end). null = old data, see EnsureStack.</summary>
+        public List<StackItem> Stack { get; set; }
         public bool ViewSnap { get; set; } = true;         // orbiting catches on standard view angles
         public bool StickToBoltEnd { get; set; } = false;  // nut side follows the bolt end when the bolt length changes
 
@@ -54,9 +69,66 @@ namespace BoltToolApp.Data
 
         // ---- link info (filled when inserted) ----
         public string AssemblyId { get; set; }
-        public string Role { get; set; }   // bolt / headwasher / nutwasher / spring / nut / jamnut / single
+        public string Role { get; set; }   // single / assembly / bolt / id of a stack element (e1, e2 …)
 
         public BoltJob Clone() => FromJson(ToJson());
+
+        // ---------------------------------------------------------------- element stack
+
+        /// <summary>Usual arrangement: head | spring | washer | clamped parts | washer | spring | nut(s).</summary>
+        public static List<StackItem> BuildStack(WasherChoice headWasher, WasherChoice nutWasher, SpringPosition spring,
+                                                 PartKind nutKind, int nuts, bool rod)
+        {
+            var list = new List<StackItem>();
+            void Add(PartKind k, StackSide s) => list.Add(new StackItem { Kind = k, Side = s });
+            PartKind W(WasherChoice c) => c == WasherChoice.Large ? PartKind.LargeWasher : PartKind.PlainWasher;
+            if (rod) Add(nutKind, StackSide.Head);
+            if (spring == SpringPosition.UnderHead) Add(PartKind.SpringWasher, StackSide.Head);
+            if (headWasher != WasherChoice.None) Add(W(headWasher), StackSide.Head);
+            if (nutWasher != WasherChoice.None) Add(W(nutWasher), StackSide.Nut);
+            if (spring == SpringPosition.UnderNut) Add(PartKind.SpringWasher, StackSide.Nut);
+            for (int i = 0; i < Math.Clamp(nuts, 0, 2); i++) Add(nutKind, StackSide.Nut);   // double nut = two equal nuts
+            return list;
+        }
+
+        /// <summary>Makes sure the stack exists (old data used fixed washer / spring / nut fields) and is consistent:
+        /// head-side elements first, unique ids, no negative values.</summary>
+        public void EnsureStack()
+        {
+            Stack ??= BuildStack(HeadWasher, NutWasher, Spring, NutKind, NutCount, BoltKind == PartKind.ThreadedRod);
+            var ordered = new List<StackItem>();
+            foreach (var it in Stack) if (it != null && it.Side == StackSide.Head) ordered.Add(it);
+            foreach (var it in Stack) if (it != null && it.Side == StackSide.Nut) ordered.Add(it);
+            var used = new HashSet<string>();
+            int n = 1;
+            foreach (var it in ordered)
+            {
+                if (PartKindInfo.IsBolt(it.Kind)) it.Kind = PartKind.PlainWasher;
+                if (string.IsNullOrEmpty(it.Id) || !used.Add(it.Id))
+                {
+                    while (!used.Add("e" + n)) n++;
+                    it.Id = "e" + n;
+                }
+                if (!double.IsFinite(it.Gap) || it.Gap < 0) it.Gap = 0;
+                if (!double.IsFinite(it.Thickness) || it.Thickness < 0) it.Thickness = 0;
+                if (!double.IsFinite(it.OuterD) || it.OuterD < 0) it.OuterD = 0;
+            }
+            Stack = ordered;
+            if (!double.IsFinite(ClampLength) || ClampLength < 0) ClampLength = 0;
+            if (!double.IsFinite(MinProtrusionPitches) || MinProtrusionPitches < 0) MinProtrusionPitches = 2;
+            if (!double.IsFinite(Length) || Length <= 0) Length = Row.DefaultLength;
+        }
+
+        /// <summary>Index of the first nut-side element (= number of head-side elements).</summary>
+        [JsonIgnore] public int HeadCount
+        {
+            get { int c = 0; if (Stack != null) foreach (var it in Stack) if (it.Side == StackSide.Head) c++; return c; }
+        }
+
+        /// <summary>Free space immediately before element i (not the clamped material).</summary>
+        public double GapBefore(int i) => Stack[i].Gap;
+
+        public void SetGapBefore(int i, double value) => Stack[i].Gap = double.IsFinite(value) ? Math.Max(0, value) : 0;
 
         static readonly JsonSerializerOptions Opt = new()
         {

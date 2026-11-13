@@ -13,6 +13,7 @@ namespace BoltToolApp.Data
         public double Width { get; set; }
         public double Height { get; set; }
         public int Tab { get; set; }
+        public int TqMethod { get; set; } = -1;
         public int TqClass { get; set; } = -1;
         public int TqFinish { get; set; } = -1;
         public int TqLube { get; set; } = -1;
@@ -65,7 +66,7 @@ namespace BoltToolApp.Data
                 if (File.Exists(FilePath))
                 {
                     var j = BoltJob.FromJson(File.ReadAllText(FilePath));
-                    if (j != null) { j.AssemblyId = null; j.Role = null; j.Offsets = new(); return j; }
+                    if (j != null) { j.AssemblyId = null; j.Role = null; return j; }
                 }
             }
             catch { }

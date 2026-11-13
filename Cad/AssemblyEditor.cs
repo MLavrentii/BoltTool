@@ -18,6 +18,7 @@ namespace BoltToolApp.Cad
         {
             var db = doc.Database; var ed = doc.Editor;
             job = job.Clone();
+            if (job.IsAssembly) job.EnsureStack();
             if (job.IsAssembly && job.SeparateBlocks) job.AssemblyId = Guid.NewGuid().ToString("N").Substring(0, 12);
 
             using var tr = db.TransactionManager.StartTransaction();
@@ -101,6 +102,7 @@ namespace BoltToolApp.Cad
             var refs = LinkedRefs(tr, br, oldJob);
             newJob = newJob.Clone();
             newJob.AssemblyId = oldJob.AssemblyId;
+            if (newJob.IsAssembly) newJob.EnsureStack();
             // structural switches are only allowed through BOLTEDIT on a new insert
             newJob.IsAssembly = oldJob.IsAssembly; newJob.SeparateBlocks = oldJob.SeparateBlocks;
 
