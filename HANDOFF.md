@@ -205,6 +205,14 @@ AssemblyId, Role
 24. **Thread length b override (2026-11-26):** `BoltJob.ThreadLength` (0 = standard), `ThreadLenBox` + hint on the Part tab
     (partial bolts only). `StandardTable.ThreadLength(kind, r, L, custom)`; `BuildPart/BuildLayout/BuildBolt(..., threadLength)`;
     in the block cache key and the preview mesh key. Possible next step: a draggable "thread start" grip in the preview.
+25. **No value changes by mouse wheel (2026-11-26):** `OnPreviewWheel` (registered on the window with handledEventsToo)
+    swallows the wheel over closed combo boxes (also editable ones) and sliders and re-raises it on the surrounding
+    ScrollViewer, so the page scrolls instead. Open drop-down lists and the preview zoom are unaffected.
+26. **Thread length editing (2026-11-26):** `ThreadLenBox` always shows the b in use (`SetText` in UpdateDependent); edited only via
+    `OnThreadLen` (Enter / LostFocus) – NOT in ReadControls, otherwise a changed bolt length would freeze the old standard
+    value. Typing the standard value or emptying the box = standard (0). "Back to standard" button. Custom b is clamped to
+    `MinThreadLength` (tip chamfer + 2 P) .. L (fixes the folded profile for very short threads); plain shank < 0.5 P is
+    dropped. `ComputeLayout` warns when the first nut-side nut sits on the unthreaded shank.
 
 ## 7. Things to check next
 

@@ -84,7 +84,7 @@ for a pop-up explanation. The window reopens in the state it was closed in.
 | Insertion / connection point | Where the block origin 0,0,0 sits on the axis (see Block rules). Bolts and assemblies also offer **Under head** = centre of the flat head face that points toward the bolt end |
 | Thread | None, simplified (thin root lines) or detailed (real helix) |
 | Line where the thread starts | Partial-thread bolts get a line across the shank where the thread begins (thread length b from the end), drawn as a normal visible line like on a technical drawing. Works with *None* and *Simplified*; the helix always shows its start edge. Untick to leave it out |
-| Thread length b | Partial-thread bolts only: length of the thread from the bolt end. Empty = standard (ISO 4014 / 4762). The hint shows the standard value and where the thread starts under the head. A value longer than the bolt = threaded to the head |
+| Thread length b | Partial-thread bolts only: the box shows the thread length in use (from the bolt end). Type a bigger or smaller value and press Enter; **Back to standard** (or the standard value / an empty box) returns to the standard, which follows the bolt length. Shortest = tip chamfer + 2 pitches; longer than the bolt = threaded to the head. The hint shows where the thread starts under the head. In an assembly a warning appears when the nut sits on the unthreaded shank |
 | Dimensions | The main dimensions of the selected part |
 | What the letters mean | Small picture showing where d, P, s, k, L, b, m, d1, d2, h are measured |
 
@@ -224,6 +224,9 @@ They are plugin-specific preview grips, not ordinary drawing construction lines.
 | Enter in a number field | Apply the value |
 
 Arrow keys rotate when the focus is not in a text box, list or slider – click the preview first.
+
+The mouse wheel never changes a list, slider or input box: over those fields it scrolls the panel. Inside an open
+drop-down list it scrolls the list; over the preview it zooms.
 
 ## In the drawing
 

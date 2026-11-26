@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BoltToolApp.Data;
 
 namespace BoltToolApp.Geometry
@@ -186,6 +187,19 @@ namespace BoltToolApp.Geometry
             {
                 Kind = bolt, Role = "bolt", X = 0, Length = length, Thickness = hk + length, OuterR = OuterRadius(bolt, row)
             });
+
+            // a nut on the nut side must sit on the thread
+            if (!rod && lay.Warning == null)
+            {
+                double b = StandardTable.ThreadLength(bolt, row, length, job.ThreadLength);
+                double threadStart = hk + length - b;
+                var nut = lay.Parts.Where(p => p.Item != null && p.Item.Side == StackSide.Nut && PartKindInfo.IsNut(p.Kind))
+                                   .OrderBy(p => p.X).FirstOrDefault();
+                // the channel-nut holder: the threaded nut is the last part of it, after the plate and the collar
+                double nutStart = nut == null ? 0 : nut.Kind == PartKind.ChannelNutHolder ? nut.X + nut.Thickness - ChannelDims(row).t : nut.X;
+                if (nut != null && nutStart < threadStart - 0.05)
+                    lay.Warning = $"The nut sits {threadStart - nutStart:0.#} mm on the unthreaded shank – thread length b should be at least {hk + length - nutStart:0.#} mm";
+            }
             return lay;
         }
 
@@ -268,6 +282,7 @@ namespace BoltToolApp.Geometry
             bool rod = kind == PartKind.ThreadedRod;
             bool socket = kind == PartKind.SocketCapScrew;
             double xT0 = rod ? c : Math.Max(k, xE - b);
+            if (!rod && xT0 - k < 0.5 * r.P) xT0 = k;   // a sliver of plain shank looks like a double line -> thread to the head
             double rc = 0.96 * r.S / 2;
             double dk = r.SocketDk / 2, ch = 0.06 * r.SocketDk, ks = r.SocketS / 2, st = r.SocketT;
             bool detailed = thread == ThreadStyle.Detailed;

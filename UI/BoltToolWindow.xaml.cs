@@ -65,9 +65,38 @@ namespace BoltToolApp.UI
             Activated += (s, e) => RefreshLayers();
             RestoreUi();
             Closing += (s, e) => SaveState();
+            // the mouse wheel must never change a value: it scrolls the page instead
+            AddHandler(PreviewMouseWheelEvent, new MouseWheelEventHandler(OnPreviewWheel), true);
         }
 
         // ================================================================ helpers
+
+        /// <summary>Wheel over a closed combo box, slider or text box: do not change the value, scroll the
+        /// surrounding page instead. An open drop-down list still scrolls normally (it lives in its own popup).</summary>
+        void OnPreviewWheel(object sender, MouseWheelEventArgs e)
+        {
+            DependencyObject d = e.OriginalSource as DependencyObject;
+            Control target = null;
+            for (var x = d; x != null; x = Up(x))
+            {
+                if (x is ComboBox cb) { if (!cb.IsDropDownOpen) target = cb; break; }
+                if (x is Slider sl) { target = sl; break; }
+                if (x is ScrollViewer sv0 && sv0.TemplatedParent is System.Windows.Controls.Primitives.TextBoxBase) continue;   // inside an (editable combo's) text box
+                if (x is ScrollViewer || x is PreviewControl) break;   // lists / preview keep their own wheel
+            }
+            if (target == null) return;
+            e.Handled = true;
+            for (var x = Up(target); x != null; x = Up(x))
+                if (x is ScrollViewer sv)
+                {
+                    sv.RaiseEvent(new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta) { RoutedEvent = MouseWheelEvent, Source = target });
+                    break;
+                }
+
+            static DependencyObject Up(DependencyObject o) =>
+                o is Visual || o is System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(o) ?? LogicalTreeHelper.GetParent(o)
+                                                                          : LogicalTreeHelper.GetParent(o);
+        }
 
         static ComboBoxItem Item(string text, object tag) => new() { Content = Loc.T(text), Tag = tag };
 
@@ -220,7 +249,6 @@ namespace BoltToolApp.UI
             ThSimple.IsChecked = job.Thread == ThreadStyle.Simplified;
             ThDetail.IsChecked = job.Thread == ThreadStyle.Detailed;
             ThreadStartCheck.IsChecked = job.ThreadStartLine;
-            ThreadLenBox.Text = job.ThreadLength > 0 ? F(job.ThreadLength) : "";
 
             AsmCheck.IsChecked = job.IsAssembly;
             Select(AsmBoltBox, job.BoltKind);
@@ -269,7 +297,6 @@ namespace BoltToolApp.UI
             j.Thread = ThDetail.IsChecked == true ? ThreadStyle.Detailed : ThNone.IsChecked == true ? ThreadStyle.None : ThreadStyle.Simplified;
             j.BasePoint = TagOf(BaseBox, j.BasePoint);
             j.ThreadStartLine = ThreadStartCheck.IsChecked == true;
-            j.ThreadLength = string.IsNullOrWhiteSpace(ThreadLenBox.Text) ? 0 : Math.Max(0, Num(ThreadLenBox.Text, j.ThreadLength));
 
             j.IsAssembly = AsmCheck.IsChecked == true;
             j.ClampLength = Math.Max(0, Num(ClampBox.Text, j.ClampLength));
@@ -335,8 +362,14 @@ namespace BoltToolApp.UI
                     double L = asm ? lay.BoltLength : j.Length;
                     double std = StandardTable.ThreadLength(shownKind, r, L);
                     double b = StandardTable.ThreadLength(shownKind, r, L, j.ThreadLength);
-                    ThreadLenHint.Text = Loc.F("Standard {0} mm. Thread starts {1} mm under the head.", F(Math.Round(std, 1)), F(Math.Round(L - b, 1)))
-                        + (j.ThreadLength > L ? "  " + Loc.T("(longer than the bolt = full thread)") : "");
+                    SetText(ThreadLenBox, F(Math.Round(b, 2)));       // always the value in use – edit it from here
+                    ThreadLenStdBtn.IsEnabled = j.ThreadLength > 0;
+                    ThreadLenHint.Text = (j.ThreadLength > 0 ? Loc.F("Own value (standard {0} mm).", F(Math.Round(std, 1)))
+                                                             : Loc.T("Standard value."))
+                        + " " + Loc.F("Thread starts {0} mm under the head.", F(Math.Round(L - b, 1)))
+                        + (b >= L - 1e-6 ? " " + Loc.T("Threaded up to the head.") : "")
+                        + (j.ThreadLength > 0 && j.ThreadLength < StandardTable.MinThreadLength(r) - 1e-6
+                            ? " " + Loc.F("Shortest possible: {0} mm.", F(StandardTable.MinThreadLength(r))) : "");
                 }
             }
             DesignationText.Text = $"{PartKindInfo.Designation(shownKind, j.Standard)}" + (asm ? Loc.T("  ·  assembly uses the bolt selected on the Assembly tab") : "");
@@ -660,6 +693,33 @@ namespace BoltToolApp.UI
         }
 
         // ================================================================ block name + saved sets
+
+        /// <summary>Thread length typed (Enter / leaving the box). The standard value itself, or an empty box, = standard,
+        /// so it keeps following the bolt length.</summary>
+        void OnThreadLen(object sender, RoutedEventArgs e)
+        {
+            if (_loading || !IsInitialized) return;
+            var j = _job; var r = j.Row;
+            var kind = j.IsAssembly ? j.BoltKind : j.Kind;
+            double L = j.IsAssembly ? PartBuilder.ComputeLayout(j).BoltLength : j.Length;
+            double std = StandardTable.ThreadLength(kind, r, L);
+            string t = ThreadLenBox.Text.Trim();
+            double v = t.Length == 0 ? 0 : Num(t, -1);
+            if (v < 0) { Status("Enter a number in mm."); UpdateDependent(); return; }
+            double cur = StandardTable.ThreadLength(kind, r, L, j.ThreadLength);
+            if (Math.Abs(v - cur) < 1e-6) return;                               // nothing changed
+            j.ThreadLength = v == 0 || Math.Abs(v - std) < 0.005 ? 0 : v;
+            UpdateDependent();
+            Render(true);
+        }
+
+        void OnThreadLenStd(object sender, RoutedEventArgs e)
+        {
+            _job.ThreadLength = 0;
+            bool l = _loading; _loading = true; ThreadLenBox.Text = ""; _loading = l;
+            UpdateDependent();
+            Render(true);
+        }
 
         void OnMeasureMode(object sender, SelectionChangedEventArgs e) =>
             Preview.Measure = TagOf(MeasureModeBox, PreviewControl.MeasureMode.Aligned);
@@ -1029,6 +1089,7 @@ namespace BoltToolApp.UI
             if (sender == AzBox || sender == ElBox || sender == SpinBox) OnAngleBox(sender, e);
             else if (sender == TqMuG || sender == TqMuK || sender == TqUtil) OnTorque(sender, e);
             else if (sender == ProtMmBox) OnProtMm(sender, e);
+            else if (sender == ThreadLenBox) OnThreadLen(sender, e);
             else OnChanged(sender, e);
         }
 

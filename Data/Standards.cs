@@ -172,8 +172,12 @@ namespace BoltToolApp.Data
         public static double ThreadLength(PartKind kind, SizeRow r, double length, double custom)
         {
             if (kind == PartKind.HexBoltFullThread || kind == PartKind.ThreadedRod) return length;
-            return custom > 0 ? Math.Min(custom, length) : ThreadLength(kind, r, length);
+            // at least the tip chamfer + 2 pitches of full thread, otherwise the profile folds back on itself
+            return custom > 0 ? Math.Min(Math.Max(custom, MinThreadLength(r)), length) : ThreadLength(kind, r, length);
         }
+
+        /// <summary>Shortest thread that can be drawn: tip chamfer + 2 pitches.</summary>
+        public static double MinThreadLength(SizeRow r) => Math.Round((r.D - r.D3) / 2 + 2 * r.P, 1);
 
         public double NextStandardLength(double minLength)
         {

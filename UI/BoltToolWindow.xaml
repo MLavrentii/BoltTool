@@ -244,10 +244,13 @@
                                 </StackPanel>
                                 <CheckBox x:Name="ThreadStartCheck" Content="Line where the thread starts (partial thread)" Margin="0,8,0,0" Checked="OnChanged" Unchecked="OnChanged"/>
                                 <StackPanel x:Name="ThreadLenPanel">
-                                    <TextBlock Text="Thread length b from the bolt end (mm) – empty = standard" Style="{StaticResource Label}"/>
+                                    <TextBlock Text="Thread length b from the bolt end (mm)" Style="{StaticResource Label}"/>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBox x:Name="ThreadLenBox" Width="80" LostFocus="OnChanged" KeyDown="OnEnterKey"/>
-                                        <TextBlock x:Name="ThreadLenHint" Style="{StaticResource Hint}" Margin="10,4,0,0" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="ThreadLenBox" Width="80" LostFocus="OnThreadLen" KeyDown="OnEnterKey"/>
+                                        <Button x:Name="ThreadLenStdBtn" Style="{StaticResource Chip}" Content="Back to standard" Margin="6,0,0,0" Click="OnThreadLenStd"/>
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock x:Name="ThreadLenHint" Style="{StaticResource Hint}"/>
                                     </StackPanel>
                                 </StackPanel>
 
