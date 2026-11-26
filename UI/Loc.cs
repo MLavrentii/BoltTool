@@ -112,6 +112,8 @@ namespace BoltToolApp.UI
             ["WipeLayerBox"] = "Layer for the wipeouts. Pick one from the drawing or type a new name – it is created automatically.",
             ["ThreadStartCheck"] = "On: a partially threaded bolt gets a line across the shank where the thread starts (thread length b from the bolt end). Works with None and Simplified thread; the detailed helix always shows its start edge. Full-thread bolts and rods have no such line.",
             ["CustomNameBox"] = "Block name to use, e.g. Okayama_M16_anchor. Characters AutoCAD does not allow (< > / \\ \" : ; ? * | , = `) become _. If a block with this name but other geometry exists, _2, _3 … is added.",
+            ["MeasureModeBox"] = "How Shift+click measures. Aligned: straight between the two points. Horizontal / Vertical: only the 0° or 90° part on the screen (like DIMLINEAR). Along the bolt: parallel to the bolt axis, shows the real axial distance also in iso views. Across the bolt: 90° to the bolt axis.",
+            ["ThreadLenBox"] = "Length of the thread measured from the bolt end. Leave empty for the standard value. Larger than the bolt length = threaded to the head.",
             ["NameStyleBox"] = "How new blocks are named. Simple: size + one letter per part from the head side to the bolt end (B bolt, Bf full-thread bolt, Sc socket cap screw, R rod, N nut, Nt thin nut, Nf flange nut, W washer, Wl large washer, S spring washer, ChN channel nut, ChNH channel nut + holder). Full: the long technical name. Size only: just size x length, e.g. 12x40 (nuts and washers alone keep their letter: 12_N). Saved set name: the name of the loaded saved set, as long as its parts are unchanged. Custom: type any name; separate blocks get <name>_<part>. Views other than side add _ISO, _TOP …",
             ["SetBox"] = "Your saved sets (bolt, size, clamp and elements). Choose one and press Load. Hover an entry to see what it contains.",
             ["SetSaveBtn"] = "Save the current bolt and elements under a name, with an optional comment. The name starts as the size code (e.g. 12x40_BWSN) and can be changed.",
@@ -670,6 +672,18 @@ namespace BoltToolApp.UI
             ["Size only – bolt size x length (12x40)"] = "サイズのみ – ボルト径×長さ (12x40)",
             ["Line where the thread starts (partial thread)"] = "ねじ部の始まりの線（部分ねじ）",
             ["On: a partially threaded bolt gets a line across the shank where the thread starts (thread length b from the bolt end). Works with None and Simplified thread; the detailed helix always shows its start edge. Full-thread bolts and rods have no such line."] = "オン: 部分ねじボルトのねじが始まる位置（先端からねじ長さ b）に軸を横切る線を描きます。ねじ表示「なし」「簡易」で有効。詳細（らせん）は常に始まりの稜線が出ます。全ねじボルトと寸切りボルトには線はありません。",
+            ["Measure"] = "計測",
+            ["Aligned"] = "平行（2点間）",
+            ["Horizontal (0°)"] = "水平 (0°)",
+            ["Vertical (90°)"] = "垂直 (90°)",
+            ["Along the bolt"] = "ボルト軸方向",
+            ["Across the bolt (90°)"] = "ボルト軸に直角 (90°)",
+            ["Thread length b from the bolt end (mm) – empty = standard"] = "ねじ長さ b（先端から, mm） – 空欄 = 標準",
+            ["Standard {0} mm. Thread starts {1} mm under the head."] = "標準 {0} mm。ねじは首下 {1} mm から始まります。",
+            ["(longer than the bolt = full thread)"] = "（ボルトより長い = 全ねじ）",
+            ["Under head – centre of the head face toward the bolt end"] = "首下 – 頭部のボルト先端側の面の中心",
+            ["How Shift+click measures. Aligned: straight between the two points. Horizontal / Vertical: only the 0° or 90° part on the screen (like DIMLINEAR). Along the bolt: parallel to the bolt axis, shows the real axial distance also in iso views. Across the bolt: 90° to the bolt axis."] = "Shift+クリック計測の方法。平行: 2点間の直線距離。水平 / 垂直: 画面上の 0° / 90° 成分のみ（DIMLINEAR と同様）。ボルト軸方向: 軸に平行、アイソメでも実際の軸方向距離を表示。軸に直角: 軸に 90° の方向。",
+            ["Length of the thread measured from the bolt end. Leave empty for the standard value. Larger than the bolt length = threaded to the head."] = "ボルト先端から測ったねじ部の長さ。空欄で標準値。ボルト長さより大きい場合は首下までねじ。",
         };
     }
 }

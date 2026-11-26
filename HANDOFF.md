@@ -198,6 +198,13 @@ AssemblyId, Role
 21. **Name style Custom (2026-11-26):** `BlockNameStyle.Custom` + `BoltJob.CustomName`, text box `CustomNameBox` (shown only
     for Custom, live preview via `OnCustomNameTyped`). `BlockFactory.CustomBlockName()` cleans it; separate blocks get
     `<name>_<simple>`; empty -> simple name; collisions -> `_2`.
+22. **Measure modes (2026-11-26):** `PreviewControl.MeasureMode` (Aligned, Horizontal, Vertical, AlongAxis, AcrossAxis), combo
+    `MeasureModeBox` in the bar under the preview. Linear dims drawn by `DrawMeasure` (extension lines + offset dimension
+    line). AlongAxis divides by the projected axis length (= real axial distance for points on the outline).
+23. **Base point Under head in assemblies (2026-11-26):** `BasePoint.UnderHead` added to the assembly list (was mapped to ClampHead).
+24. **Thread length b override (2026-11-26):** `BoltJob.ThreadLength` (0 = standard), `ThreadLenBox` + hint on the Part tab
+    (partial bolts only). `StandardTable.ThreadLength(kind, r, L, custom)`; `BuildPart/BuildLayout/BuildBolt(..., threadLength)`;
+    in the block cache key and the preview mesh key. Possible next step: a draggable "thread start" grip in the preview.
 
 ## 7. Things to check next
 

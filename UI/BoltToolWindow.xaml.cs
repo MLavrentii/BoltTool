@@ -117,6 +117,15 @@ namespace BoltToolApp.UI
             }
             AddHeadBox.SelectedIndex = 0; AddNutBox.SelectedIndex = 0;
 
+            int mm = Math.Max(0, MeasureModeBox.SelectedIndex);
+            MeasureModeBox.Items.Clear();
+            MeasureModeBox.Items.Add(Item("Aligned", PreviewControl.MeasureMode.Aligned));
+            MeasureModeBox.Items.Add(Item("Horizontal (0°)", PreviewControl.MeasureMode.Horizontal));
+            MeasureModeBox.Items.Add(Item("Vertical (90°)", PreviewControl.MeasureMode.Vertical));
+            MeasureModeBox.Items.Add(Item("Along the bolt", PreviewControl.MeasureMode.AlongAxis));
+            MeasureModeBox.Items.Add(Item("Across the bolt (90°)", PreviewControl.MeasureMode.AcrossAxis));
+            MeasureModeBox.SelectedIndex = mm;
+
             NameStyleBox.Items.Clear();
             NameStyleBox.Items.Add(Item("Simple – size + part letters (12x40_BWSN)", BlockNameStyle.Simple));
             NameStyleBox.Items.Add(Item("Full – technical name (BT_ISO_ASM_M12x40_C20_SIDE_…)", BlockNameStyle.Full));
@@ -150,16 +159,16 @@ namespace BoltToolApp.UI
             if (_job.IsAssembly)
             {
                 BaseBox.Items.Add(Item("Head top – middle of the head, outside", BasePoint.HeadTop));
+                BaseBox.Items.Add(Item("Under head – centre of the head face toward the bolt end", BasePoint.UnderHead));
                 BaseBox.Items.Add(Item("Head-side contact face – where the head / its washers press on the part", BasePoint.ClampHead));
                 BaseBox.Items.Add(Item("Nut-side contact face – where the nut-side washers / nut press on the part", BasePoint.ClampNut));
                 BaseBox.Items.Add(Item("Bolt tip (thread end)", BasePoint.ThreadEnd));
-                if (cur == BasePoint.UnderHead) cur = BasePoint.ClampHead;
-                else if (cur is not (BasePoint.HeadTop or BasePoint.ClampHead or BasePoint.ClampNut or BasePoint.ThreadEnd)) cur = BasePoint.HeadTop;
+                if (cur is not (BasePoint.HeadTop or BasePoint.UnderHead or BasePoint.ClampHead or BasePoint.ClampNut or BasePoint.ThreadEnd)) cur = BasePoint.HeadTop;
             }
             else if (PartKindInfo.IsBolt(_job.Kind))
             {
                 BaseBox.Items.Add(Item("Head top – middle of the head, outside", BasePoint.HeadTop));
-                BaseBox.Items.Add(Item("Under head – bearing face", BasePoint.UnderHead));
+                BaseBox.Items.Add(Item("Under head – centre of the head face toward the bolt end", BasePoint.UnderHead));
                 BaseBox.Items.Add(Item("Bolt tip (thread end)", BasePoint.ThreadEnd));
                 if (cur == BasePoint.ClampHead) cur = BasePoint.UnderHead;
                 else if (cur == BasePoint.ClampNut) cur = BasePoint.ThreadEnd;
@@ -211,6 +220,7 @@ namespace BoltToolApp.UI
             ThSimple.IsChecked = job.Thread == ThreadStyle.Simplified;
             ThDetail.IsChecked = job.Thread == ThreadStyle.Detailed;
             ThreadStartCheck.IsChecked = job.ThreadStartLine;
+            ThreadLenBox.Text = job.ThreadLength > 0 ? F(job.ThreadLength) : "";
 
             AsmCheck.IsChecked = job.IsAssembly;
             Select(AsmBoltBox, job.BoltKind);
@@ -259,6 +269,7 @@ namespace BoltToolApp.UI
             j.Thread = ThDetail.IsChecked == true ? ThreadStyle.Detailed : ThNone.IsChecked == true ? ThreadStyle.None : ThreadStyle.Simplified;
             j.BasePoint = TagOf(BaseBox, j.BasePoint);
             j.ThreadStartLine = ThreadStartCheck.IsChecked == true;
+            j.ThreadLength = string.IsNullOrWhiteSpace(ThreadLenBox.Text) ? 0 : Math.Max(0, Num(ThreadLenBox.Text, j.ThreadLength));
 
             j.IsAssembly = AsmCheck.IsChecked == true;
             j.ClampLength = Math.Max(0, Num(ClampBox.Text, j.ClampLength));
@@ -315,6 +326,19 @@ namespace BoltToolApp.UI
             DefaultPanel.Visibility = PartKindInfo.HasLength(asm ? j.BoltKind : j.Kind) ? Visibility.Visible : Visibility.Collapsed;
             DefaultText.Text = Loc.F("Default for {0}: {1} mm", r.Size, F(r.DefaultLength));
             var shownKind = asm ? j.BoltKind : j.Kind;
+            {
+                // thread length b: only partial-thread bolts
+                bool partial = shownKind is PartKind.HexBolt or PartKind.SocketCapScrew;
+                ThreadLenPanel.Visibility = partial ? Visibility.Visible : Visibility.Collapsed;
+                if (partial)
+                {
+                    double L = asm ? lay.BoltLength : j.Length;
+                    double std = StandardTable.ThreadLength(shownKind, r, L);
+                    double b = StandardTable.ThreadLength(shownKind, r, L, j.ThreadLength);
+                    ThreadLenHint.Text = Loc.F("Standard {0} mm. Thread starts {1} mm under the head.", F(Math.Round(std, 1)), F(Math.Round(L - b, 1)))
+                        + (j.ThreadLength > L ? "  " + Loc.T("(longer than the bolt = full thread)") : "");
+                }
+            }
             DesignationText.Text = $"{PartKindInfo.Designation(shownKind, j.Standard)}" + (asm ? Loc.T("  ·  assembly uses the bolt selected on the Assembly tab") : "");
             SubTitle.Text = Loc.T(_editId.IsNull ? "Bolts · nuts · washers → blocks" : "Editing a placed block – press “Update selected block”");
 
@@ -358,7 +382,7 @@ namespace BoltToolApp.UI
                 default: Dim("s", r.S); Dim("k", r.K); break;
             }
             if (PartKindInfo.HasLength(shownKind))
-                Dim("thread b", Math.Round(StandardTable.ThreadLength(shownKind, r, asm ? lay.BoltLength : j.Length), 1));
+                Dim("thread b", Math.Round(StandardTable.ThreadLength(shownKind, r, asm ? lay.BoltLength : j.Length, j.ThreadLength), 1));
 
             // assembly summary + the small order / distance diagrams
             var diagVis = asm ? Visibility.Visible : Visibility.Collapsed;
@@ -637,6 +661,9 @@ namespace BoltToolApp.UI
 
         // ================================================================ block name + saved sets
 
+        void OnMeasureMode(object sender, SelectionChangedEventArgs e) =>
+            Preview.Measure = TagOf(MeasureModeBox, PreviewControl.MeasureMode.Aligned);
+
         /// <summary>Live update of the name preview while the custom name is typed (the job is updated on Enter / leaving the box too).</summary>
         void OnCustomNameTyped(object sender, TextChangedEventArgs e)
         {
@@ -821,10 +848,10 @@ namespace BoltToolApp.UI
                 var j = _job; var r = j.Row;
                 var lay = PartBuilder.ComputeLayout(j);
                 _lay = lay;
-                string key = string.Join("|", j.Standard, j.Size, j.Thread,
+                string key = string.Join("|", j.Standard, j.Size, j.Thread, j.ThreadLength,
                     string.Join(";", lay.Parts.Select(p => $"{p.Kind}{p.X:0.###}/{p.Length:0.###}/{p.Thickness:0.###}/{p.OuterR:0.###}/{p.Item?.Side}")));
                 string viewKey = $"{j.Azimuth:0.##}|{j.Elevation:0.##}|{j.Spin:0.##}";
-                if (key != _meshKey) { _mesh = PartBuilder.BuildLayout(lay, r, j.Thread); _meshKey = key; Preview.ClearMeasures(); }
+                if (key != _meshKey) { _mesh = PartBuilder.BuildLayout(lay, r, j.Thread, true, j.ThreadLength); _meshKey = key; Preview.ClearMeasures(); }
                 if (viewKey != _viewKey) { _viewKey = viewKey; Preview.ClearMeasures(); }      // measured points belong to one view
                 var dwg = HiddenLineRenderer.Render(_mesh, j.Azimuth, j.Elevation, j.Spin, j.HiddenLines, quality, j.ThreadStartLine);
                 Point Px(double x) { var p = dwg.Project(new Vec3(x, 0, 0)); return new Point(p.X, p.Y); }

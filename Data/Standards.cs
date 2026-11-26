@@ -168,6 +168,13 @@ namespace BoltToolApp.Data
             return b;
         }
 
+        /// <summary>Thread length with an optional user value (custom &gt; 0) for partial-thread bolts.</summary>
+        public static double ThreadLength(PartKind kind, SizeRow r, double length, double custom)
+        {
+            if (kind == PartKind.HexBoltFullThread || kind == PartKind.ThreadedRod) return length;
+            return custom > 0 ? Math.Min(custom, length) : ThreadLength(kind, r, length);
+        }
+
         public double NextStandardLength(double minLength)
         {
             foreach (var l in Lengths.OrderBy(x => x)) if (l >= minLength - 1e-6) return l;

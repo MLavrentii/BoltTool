@@ -81,9 +81,10 @@ for a pop-up explanation. The window reopens in the state it was closed in.
 | Size | M3 … M48. Changing it loads the default length of that size |
 | Length L | Length under the head (threaded rod: total length). Pick a standard length or type any value |
 | Set as default | Stores the current length as the default for this size |
-| Insertion / connection point | Where the block origin 0,0,0 sits on the axis (see Block rules) |
+| Insertion / connection point | Where the block origin 0,0,0 sits on the axis (see Block rules). Bolts and assemblies also offer **Under head** = centre of the flat head face that points toward the bolt end |
 | Thread | None, simplified (thin root lines) or detailed (real helix) |
 | Line where the thread starts | Partial-thread bolts get a line across the shank where the thread begins (thread length b from the end), drawn as a normal visible line like on a technical drawing. Works with *None* and *Simplified*; the helix always shows its start edge. Untick to leave it out |
+| Thread length b | Partial-thread bolts only: length of the thread from the bolt end. Empty = standard (ISO 4014 / 4762). The hint shows the standard value and where the thread starts under the head. A value longer than the bolt = threaded to the head |
 | Dimensions | The main dimensions of the selected part |
 | What the letters mean | Small picture showing where d, P, s, k, L, b, m, d1, d2, h are measured |
 
@@ -142,6 +143,7 @@ the holder plate and the lip are already inside the element. The grooved face al
 | Control | Meaning |
 |---|---|
 | Side, Head end, Thread end, Top, Iso SW / SE / NE / NW | Jump to a standard view |
+| Measure | How Shift+click measures: Aligned, Horizontal (0°), Vertical (90°), Along the bolt, Across the bolt (90°) |
 | Snap view angles | While orbiting, the view catches on standard angles (see below) |
 | Show wipeouts | Shows the wipeout areas in the preview only |
 
@@ -201,7 +203,7 @@ not work when looking straight along the bolt (end views).
 |---|---|
 | Drag the blue ▶ at the bolt tip | Changes only the bolt length (switches an assembly to manual length) |
 | Drag the blue ▶ on the first nut-side element | Moves the whole nut side (clamp length); the bolt length follows |
-| Shift + click two points | Green dimension with arrows. The number is the **projected 2D distance** in the current view, not necessarily the physical 3D distance. Snaps use drawing vertices (not midpoints/centres) |
+| Shift + click two points | Green dimension with arrows. The type is chosen in **Measure** under the preview: *Aligned* (straight between the points), *Horizontal (0°)* / *Vertical (90°)* (only that part, like `DIMLINEAR`), *Along the bolt* (parallel to the axis – shows the real axial distance, also in iso views, when both points lie on the bolt outline), *Across the bolt (90°)*. Other values are the **projected 2D distance** in the current view. Snaps use drawing vertices (not midpoints/centres) |
 | Esc | Removes the measurements and the selection |
 | Save JPG | Saves the preview exactly as shown, with its dimensions, as a JPG file |
 

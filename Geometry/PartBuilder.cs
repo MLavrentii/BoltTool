@@ -203,7 +203,7 @@ namespace BoltToolApp.Geometry
         /// diameter overrides; <paramref name="assembled"/> draws a spring washer flat (tightened).
         /// </summary>
         public static Mesh BuildPart(PartKind kind, SizeRow r, double length, ThreadStyle thread,
-                                     StackItem item = null, bool assembled = false)
+                                     StackItem item = null, bool assembled = false, double threadLength = 0)
         {
             var m = new Mesh();
             double t = Thickness(kind, r, length, item);
@@ -213,7 +213,7 @@ namespace BoltToolApp.Geometry
                 case PartKind.HexBoltFullThread:
                 case PartKind.SocketCapScrew:
                 case PartKind.ThreadedRod:
-                    BuildBolt(m, kind, r, length, thread); break;
+                    BuildBolt(m, kind, r, length, thread, threadLength); break;
                 case PartKind.HexNut:
                 case PartKind.ThinNut:
                     BuildNut(m, r, t, thread); break;
@@ -237,13 +237,13 @@ namespace BoltToolApp.Geometry
             return m;
         }
 
-        public static Mesh BuildLayout(Layout lay, SizeRow r, ThreadStyle thread, bool assembled = true)
+        public static Mesh BuildLayout(Layout lay, SizeRow r, ThreadStyle thread, bool assembled = true, double threadLength = 0)
         {
             var all = new Mesh();
             for (int i = 0; i < lay.Parts.Count; i++)
             {
                 var p = lay.Parts[i];
-                all.Append(BuildPart(p.Kind, r, p.Length, thread, p.Item, assembled && lay.Parts.Count > 1), p.X);
+                all.Append(BuildPart(p.Kind, r, p.Length, thread, p.Item, assembled && lay.Parts.Count > 1, threadLength), p.X);
                 while (all.GroupOwner.Count < all.GroupCount) all.GroupOwner.Add(i);
             }
             return all;
@@ -259,12 +259,12 @@ namespace BoltToolApp.Geometry
                 pts.Add((from + dir * i * pitch / 2, (i % 2 == 1) ? rMin : rMaj));
         }
 
-        static void BuildBolt(Mesh m, PartKind kind, SizeRow r, double L, ThreadStyle thread)
+        static void BuildBolt(Mesh m, PartKind kind, SizeRow r, double L, ThreadStyle thread, double threadLength = 0)
         {
             double k = HeadHeight(kind, r);
             double rs = r.D / 2, rMin = r.D3 / 2, c = rs - rMin;
             double xE = k + L;
-            double b = StandardTable.ThreadLength(kind, r, L);
+            double b = StandardTable.ThreadLength(kind, r, L, threadLength);
             bool rod = kind == PartKind.ThreadedRod;
             bool socket = kind == PartKind.SocketCapScrew;
             double xT0 = rod ? c : Math.Max(k, xE - b);

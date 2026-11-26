@@ -63,6 +63,7 @@ namespace BoltToolApp.Data
         public ThreadStyle Thread { get; set; } = ThreadStyle.Simplified;
         public bool HiddenLines { get; set; } = false;
         public bool ThreadStartLine { get; set; } = true;   // line where the thread starts on partial-thread bolts
+        public double ThreadLength { get; set; }             // thread length b from the bolt end; 0 = standard (ISO 4014 / 4762)
         public OutputMode Output { get; set; } = OutputMode.View2D;
 
         // ---- block ----

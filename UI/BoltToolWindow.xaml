@@ -243,6 +243,13 @@
                                     <RadioButton x:Name="ThDetail" Content="Detailed (helix)" Style="{StaticResource Seg}" GroupName="th" Checked="OnChanged"/>
                                 </StackPanel>
                                 <CheckBox x:Name="ThreadStartCheck" Content="Line where the thread starts (partial thread)" Margin="0,8,0,0" Checked="OnChanged" Unchecked="OnChanged"/>
+                                <StackPanel x:Name="ThreadLenPanel">
+                                    <TextBlock Text="Thread length b from the bolt end (mm) – empty = standard" Style="{StaticResource Label}"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBox x:Name="ThreadLenBox" Width="80" LostFocus="OnChanged" KeyDown="OnEnterKey"/>
+                                        <TextBlock x:Name="ThreadLenHint" Style="{StaticResource Hint}" Margin="10,4,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </StackPanel>
 
                                 <TextBlock Text="Dimensions" Style="{StaticResource Section}"/>
                                 <WrapPanel x:Name="DimPanel" Margin="0,6,0,0"/>
@@ -509,6 +516,8 @@
                 <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Background="White" Padding="12,8,12,2">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                            <TextBlock Text="Measure" Margin="0,4,6,0" Foreground="#6B7280"/>
+                            <ComboBox x:Name="MeasureModeBox" Width="150" SelectionChanged="OnMeasureMode"/>
                             <CheckBox x:Name="ViewSnapCheck" Content="Snap view angles" Margin="14,4,0,0" Checked="OnChanged" Unchecked="OnChanged"/>
                             <CheckBox x:Name="ShowWipeToggle" Content="Show wipeouts" IsChecked="True" Margin="14,4,0,0" Click="OnShowWipe"/>
                             <Button x:Name="FitViewBtn" Style="{StaticResource Chip}" Content="Fit view" Click="OnFitView" Margin="14,0,0,0"/>

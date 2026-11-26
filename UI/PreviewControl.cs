@@ -46,7 +46,12 @@ namespace BoltToolApp.UI
         public event Action<string, double, bool> GripDrag; // grip kind, movement along the axis in mm, final
 
         // ---- measuring (Shift) ----
-        readonly List<(P2 a, P2 b)> _measures = new();
+        /// <summary>Aligned = straight between the points; Horizontal / Vertical = screen 0° / 90° (like DIMLINEAR);
+        /// AlongAxis = parallel to the bolt (shows the real axial distance); AcrossAxis = 90° to the bolt.</summary>
+        public enum MeasureMode { Aligned, Horizontal, Vertical, AlongAxis, AcrossAxis }
+        MeasureMode _mode = MeasureMode.Aligned;
+        public MeasureMode Measure { get => _mode; set { _mode = value; InvalidateVisual(); } }
+        readonly List<(P2 a, P2 b, MeasureMode m)> _measures = new();
         P2? _measureFirst, _snap;
         public bool HasMeasures => _measures.Count > 0 || _measureFirst != null;
 
@@ -169,6 +174,67 @@ namespace BoltToolApp.UI
             dc.DrawGeometry(b, null, Poly(new[] { tip, tip - dir * 9 + n * 3.2, tip - dir * 9 - n * 3.2 }, true));
         }
 
+        /// <summary>Direction (model 2D, unit) of a linear measure and the length factor of the projected bolt axis.
+        /// false = aligned (also when the bolt axis points at the viewer).</summary>
+        bool MeasureDir(MeasureMode m, out double ux, out double uy, out double axisFactor)
+        {
+            ux = 1; uy = 0; axisFactor = 1;
+            switch (m)
+            {
+                case MeasureMode.Horizontal: return true;
+                case MeasureMode.Vertical: ux = 0; uy = 1; return true;
+                case MeasureMode.AlongAxis:
+                case MeasureMode.AcrossAxis:
+                {
+                    if (Drawing == null) return false;
+                    var ax = Drawing.Project(new Vec3(1, 0, 0));
+                    double l = Math.Sqrt(ax.X * ax.X + ax.Y * ax.Y);
+                    if (l < 0.05) return false;                    // looking along the bolt
+                    ux = ax.X / l; uy = ax.Y / l; axisFactor = l;
+                    if (m == MeasureMode.AcrossAxis) { (ux, uy) = (-uy, ux); axisFactor = 1; }
+                    return true;
+                }
+                default: return false;
+            }
+        }
+
+        /// <summary>Green dimension between two model-2D points in the given mode.</summary>
+        void DrawMeasure(DrawingContext dc, P2 ma, P2 mb, MeasureMode mode, double s, Func<P2, Point> P)
+        {
+            if (!MeasureDir(mode, out double ux, out double uy, out double f))
+            {
+                Point a = P(ma), b = P(mb);
+                var along = b - a;
+                dc.DrawLine(GreenPen, a, b);
+                Arrow(dc, Green, a, -along); Arrow(dc, Green, b, along);
+                var n = along.Length > 1e-6 ? new Vector(-along.Y, along.X) / along.Length : new Vector(0, -1);
+                if (n.Y > 0) n = -n;
+                Pill(dc, ma.Dist(mb).ToString("0.##", CultureInfo.InvariantCulture) + " mm (2D)", a + along / 2 + n * 16, Green, GreenPen);
+                return;
+            }
+            // linear dimension: measured along u, dimension line offset along n (= u turned 90°)
+            double nx = -uy, ny = ux;
+            double dist = Math.Abs((mb.X - ma.X) * ux + (mb.Y - ma.Y) * uy);
+            double ha = ma.X * nx + ma.Y * ny, hb = mb.X * nx + mb.Y * ny;
+            double level = Math.Max(ha, hb) + 22 / Math.Max(s, 1e-9);     // 22 px beyond the outer point
+            var da = new P2(ma.X + nx * (level - ha), ma.Y + ny * (level - ha));
+            var db = new P2(mb.X + nx * (level - hb), mb.Y + ny * (level - hb));
+            Point A = P(ma), B = P(mb), DA = P(da), DB = P(db);
+            var nScr = new Vector(nx, -ny);
+            dc.DrawLine(Thin(GreenPen), A + nScr * 3, DA + nScr * 4);
+            dc.DrawLine(Thin(GreenPen), B + nScr * 3, DB + nScr * 4);
+            dc.DrawLine(GreenPen, DA, DB);
+            var dv = DB - DA;
+            if (dv.Length > 1e-6) { Arrow(dc, Green, DA, -dv); Arrow(dc, Green, DB, dv); }
+            string text = mode == MeasureMode.AlongAxis
+                ? (dist / f).ToString("0.##", CultureInfo.InvariantCulture) + " mm (axial)"
+                : dist.ToString("0.##", CultureInfo.InvariantCulture) + " mm (2D)";
+            Pill(dc, text, DA + dv / 2 + nScr * 14, Green, GreenPen);
+        }
+
+        static Pen _greenThin;
+        static Pen Thin(Pen p) => _greenThin ??= FrozenPen(new Pen(p.Brush, 0.8));
+
         /// <summary>Label in a rounded box centred at c; returns the box.</summary>
         Rect Pill(DrawingContext dc, string text, Point c, Brush fg, Pen border)
         {
@@ -224,21 +290,12 @@ namespace BoltToolApp.UI
                 }
 
                 // green measurements (Shift+click)
-                foreach (var (ma, mb) in _measures)
-                {
-                    Point a = P(ma), b = P(mb);
-                    var along = b - a;
-                    dc.DrawLine(GreenPen, a, b);
-                    Arrow(dc, Green, a, -along); Arrow(dc, Green, b, along);
-                    var n = along.Length > 1e-6 ? new Vector(-along.Y, along.X) / along.Length : new Vector(0, -1);
-                    if (n.Y > 0) n = -n;
-                    Pill(dc, ma.Dist(mb).ToString("0.##", CultureInfo.InvariantCulture) + " mm (2D)", a + along / 2 + n * 16, Green, GreenPen);
-                }
+                foreach (var (ma, mb, mm) in _measures) DrawMeasure(dc, ma, mb, mm, s, P);
                 if (_measureFirst is P2 mf)
                 {
                     var a = P(mf);
                     dc.DrawEllipse(Green, null, a, 4, 4);
-                    if (_snap is P2 sp2) dc.DrawLine(GreenPen, a, P(sp2));
+                    if (_snap is P2 sp2 && sp2.Dist(mf) > 1e-9) DrawMeasure(dc, mf, sp2, _mode, s, P);
                 }
                 if (_snap is P2 sp)
                 {
@@ -378,7 +435,7 @@ namespace BoltToolApp.UI
                 {
                     if (_measureFirst is P2 first)
                     {
-                        if (first.Dist(hit) > 1e-9) _measures.Add((first, hit));
+                        if (first.Dist(hit) > 1e-9) _measures.Add((first, hit, _mode));
                         _measureFirst = null;
                     }
                     else _measureFirst = hit;

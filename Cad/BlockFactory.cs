@@ -97,7 +97,7 @@ namespace BoltToolApp.Cad
             // of a block whose stored geometry differs from the newly requested dimensions.
             string geomKey = string.Join("|", "v5", std, job.Size, role,
                 string.Join(";", parts.Select(p => $"{p.Kind}:{Exact(p.X - baseX)}:{Exact(p.Length)}:{Exact(p.Thickness)}:{Exact(p.OuterR)}:{p.Item?.Side}")),
-                job.Thread, job.ThreadStartLine, Exact(job.Azimuth), Exact(job.Elevation), Exact(job.Spin), job.HiddenLines, job.Output,
+                job.Thread, job.ThreadStartLine, Exact(job.ThreadLength), Exact(job.Azimuth), Exact(job.Elevation), Exact(job.Spin), job.HiddenLines, job.Output,
                 Exact(job.Scale), job.Wipeout, job.WipeoutLayer, JsonSerializer.Serialize(row));
             string hash = Hash(geomKey);
             var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
@@ -147,7 +147,7 @@ namespace BoltToolApp.Cad
 
             // geometry in assembly coordinates
             var mesh = new Mesh();
-            foreach (var p in parts) mesh.Append(PartBuilder.BuildPart(p.Kind, row, p.Length, job.Thread, p.Item, job.IsAssembly), p.X);
+            foreach (var p in parts) mesh.Append(PartBuilder.BuildPart(p.Kind, row, p.Length, job.Thread, p.Item, job.IsAssembly, job.ThreadLength), p.X);
 
             if (job.Output == OutputMode.View2D) Write2D(db, tr, btr, job, mesh, baseX);
             else Write3D(db, tr, btr, job, parts, row, baseX);
@@ -270,7 +270,7 @@ namespace BoltToolApp.Cad
             double sc = job.Scale;
             foreach (var p in parts)
             {
-                var m = PartBuilder.BuildPart(p.Kind, row, p.Length, job.Thread == ThreadStyle.Detailed ? ThreadStyle.Detailed : ThreadStyle.None, p.Item, job.IsAssembly);
+                var m = PartBuilder.BuildPart(p.Kind, row, p.Length, job.Thread == ThreadStyle.Detailed ? ThreadStyle.Detailed : ThreadStyle.None, p.Item, job.IsAssembly, job.ThreadLength);
                 var verts = new Point3dCollection();
                 foreach (var v in m.V) verts.Add(new Point3d((v.X + p.X - baseX) * sc, v.Y * sc, v.Z * sc));
                 var faces = new Int32Collection();
