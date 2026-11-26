@@ -9,6 +9,9 @@ namespace BoltToolApp.Data
     public enum OutputMode { View2D, Mesh3D, Solid3D }
     public enum BasePoint { HeadTop, UnderHead, ThreadEnd, BearingFace, OuterFace, Center, ClampHead, ClampNut }
     public enum StackSide { Head, Nut }
+    /// <summary>Simple = 12x40_BWSN, Full = BT_ISO_ASM_M12x40_C20_SIDE_1A2B3C4D, SetName = name of the loaded saved set,
+    /// SizeOnly = 12x40 (parts without a length keep their letters: 12_N), Custom = name typed by the user.</summary>
+    public enum BlockNameStyle { Simple, Full, SetName, SizeOnly, Custom }
 
     /// <summary>One washer / nut on the bolt. The list order is the physical order from the head to the bolt end.</summary>
     public class StackItem
@@ -59,6 +62,7 @@ namespace BoltToolApp.Data
         public double Spin { get; set; } = 0;        // deg, rotation of the part about its own axis (flats/corners)
         public ThreadStyle Thread { get; set; } = ThreadStyle.Simplified;
         public bool HiddenLines { get; set; } = false;
+        public bool ThreadStartLine { get; set; } = true;   // line where the thread starts on partial-thread bolts
         public OutputMode Output { get; set; } = OutputMode.View2D;
 
         // ---- block ----
@@ -66,6 +70,12 @@ namespace BoltToolApp.Data
         public bool Wipeout { get; set; } = true;
         public string WipeoutLayer { get; set; } = "01_WIPEOUT";
         public bool SnapLengthToStandard { get; set; } = true;
+        public BlockNameStyle NameStyle { get; set; } = BlockNameStyle.Simple;
+        public string CustomName { get; set; }   // used with BlockNameStyle.Custom
+        // ---- saved set this job came from (used by NameStyle.SetName and the block description) ----
+        public string SetName { get; set; }
+        public string SetComment { get; set; }
+        public string SetCode { get; set; }   // simple code when the set was saved; the set name is used only while it still matches
 
         // ---- link info (filled when inserted) ----
         public string AssemblyId { get; set; }

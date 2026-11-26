@@ -83,6 +83,7 @@ for a pop-up explanation. The window reopens in the state it was closed in.
 | Set as default | Stores the current length as the default for this size |
 | Insertion / connection point | Where the block origin 0,0,0 sits on the axis (see Block rules) |
 | Thread | None, simplified (thin root lines) or detailed (real helix) |
+| Line where the thread starts | Partial-thread bolts get a line across the shank where the thread begins (thread length b from the end), drawn as a normal visible line like on a technical drawing. Works with *None* and *Simplified*; the helix always shows its start edge. Untick to leave it out |
 | Dimensions | The main dimensions of the selected part |
 | What the letters mean | Small picture showing where d, P, s, k, L, b, m, d1, d2, h are measured |
 
@@ -90,6 +91,7 @@ for a pop-up explanation. The window reopens in the state it was closed in.
 
 | Control | Meaning |
 |---|---|
+| Saved sets | Your own saved bolt + element sets. Choose one and press **Load** (size, bolt, length, clamp and elements are loaded; view, scale, wipeout and name settings stay). **Save…** opens a dialog: the name starts as the code (`12x40_BWSN`) and can be changed, the contents (size and elements) are shown for checking, and you can add a comment such as *bolt for Gaday Okayama*. **Delete** removes a set. Saving with an existing name asks before replacing |
 | Create a bolted connection | On: bolt + washers + nuts together. Off: only the single part from the Part tab |
 | Bolt | Bolt type used in the connection |
 | Clamp length | Total thickness of the parts the bolt holds together. 0 is allowed – the head-side and nut-side elements then touch |
@@ -133,6 +135,7 @@ the holder plate and the lip are already inside the element. The grooved face al
 | Add wipeout behind each part | Masks whatever lies under the block |
 | Wipeout layer | Layer for the wipeouts (default `01_WIPEOUT`; a new name is created automatically) |
 | Length grip snaps to standard lengths | Dragging the length grip jumps between standard lengths |
+| Block name | **Simple** – `12x40_BWSN`; **Full** – the long technical name `BT_ISO_ASM_M12x40_C20_SIDE_…`; **Size only** – just `12x40`; **Custom** – a box appears where you type the name; **Saved set name** – the name of the loaded saved set. The line below shows the next name (see [Block rules](#block-rules)) |
 
 ### Bar under the preview
 
@@ -244,7 +247,33 @@ For a linked set (separate blocks), editing or stretching one part updates the o
   first, then washers and nuts, so their wipeouts cover the shank.
 - 2D output is cleaned before it is written: overlapping and duplicate lines are merged (like `OVERKILL`).
 - Hide wipeout frames with `WIPEOUTFRAME 0`; `WIPEOUTFRAME 2` shows them on screen but does not plot them.
-- Block names look like `BT_ISO_HB_M12x40_SIDE_A1B2C3D4`; identical settings reuse the same definition.
+- **Block names – Simple** (default): size without the M, then the letters of the parts from the head side to
+  the bolt end. Examples: `12x40_BWSN` (bolt, washer, spring washer, nut), `16x60_BWWNN` (double nut),
+  `10x30_BSWlChNH` (channel nut set), `12_N` (single nut), `12x40_BWSN_ISO` (isometric view).
+
+  | Letter | Part | Letter | Part |
+  |---|---|---|---|
+  | B | Hex bolt | W | Plain washer |
+  | Bf | Hex bolt, full thread | Wl | Large washer |
+  | Sc | Socket head cap screw | S | Spring lock washer |
+  | R | Threaded rod | ChN | Channel nut |
+  | N | Hex nut | ChNH | Channel nut + holder |
+  | Nt | Thin nut | Nf | Flange nut |
+
+  The side view has no view suffix; other views add `_HEAD`, `_END`, `_TOP`, `_ISO`, `_3D` or `_V<az>_<el>`.
+  If a block with the same name but other geometry (thread, scale, gaps, wipeout …) already exists, the new
+  one gets `_2`, `_3` …; identical settings reuse the existing block.
+- **Block names – Full:** `BT_ISO_HB_M12x40_SIDE_A1B2C3D4` (standard, part code, size, view, check code).
+- **Block names – Size only:** just bolt size x length, e.g. `16x70` (`16x70_ISO` in another view). Different
+  element sets on the same bolt become `16x70`, `16x70_2` … A nut or washer alone keeps its letter (`16_N`), and
+  separate blocks give the bolt `16x70` and each element its simple name (`16_W`).
+- **Block names – Custom:** choose *Custom – type the name* and type e.g. `Okayama_M16_anchor`. The name is used
+  exactly (no view suffix); characters AutoCAD does not allow become `_`. Separate blocks get `<name>_<part>`, e.g.
+  `Okayama_M16_anchor_16_W`. If the name already holds other geometry, `_2`, `_3` … is added. Empty box = simple name.
+- **Block names – Saved set name:** the name of the loaded saved set, e.g. `Okayama_bolt` (`Okayama_bolt_ISO` in
+  another view). For separate blocks each part gets `<set name>_<simple name>`. If you change the size or the
+  elements after loading the set, the simple name is used instead, so a block is never named after a set it no
+  longer matches. The set comment is written into the block description.
 
 ## Torque calculator
 
@@ -285,6 +314,7 @@ Everything is stored in `%APPDATA%\BoltTool\`:
 | `settings.json` | Last used part, assembly, view and block settings |
 | `ui.json` | Window size and position, last tab, torque selections |
 | `language.txt` | `en` or `ja` |
+| `saved_sets.json` | Your saved sets (name, comment, code, settings) – copy it to share sets with colleagues |
 
 > [!WARNING]
 > The dimension tables (especially JIS head / nut sizes and spring washers) are typical catalogue values

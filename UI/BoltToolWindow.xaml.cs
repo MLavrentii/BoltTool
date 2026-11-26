@@ -116,6 +116,14 @@ namespace BoltToolApp.UI
                 AddNutBox.Items.Add(Item(PartKindInfo.DisplayName(k), k));
             }
             AddHeadBox.SelectedIndex = 0; AddNutBox.SelectedIndex = 0;
+
+            NameStyleBox.Items.Clear();
+            NameStyleBox.Items.Add(Item("Simple – size + part letters (12x40_BWSN)", BlockNameStyle.Simple));
+            NameStyleBox.Items.Add(Item("Full – technical name (BT_ISO_ASM_M12x40_C20_SIDE_…)", BlockNameStyle.Full));
+            NameStyleBox.Items.Add(Item("Size only – bolt size x length (12x40)", BlockNameStyle.SizeOnly));
+            NameStyleBox.Items.Add(Item("Saved set name (e.g. Okayama_bolt)", BlockNameStyle.SetName));
+            NameStyleBox.Items.Add(Item("Custom – type the name", BlockNameStyle.Custom));
+            FillSets(null);
         }
 
         void FillSizes()
@@ -202,6 +210,7 @@ namespace BoltToolApp.UI
             ThNone.IsChecked = job.Thread == ThreadStyle.None;
             ThSimple.IsChecked = job.Thread == ThreadStyle.Simplified;
             ThDetail.IsChecked = job.Thread == ThreadStyle.Detailed;
+            ThreadStartCheck.IsChecked = job.ThreadStartLine;
 
             AsmCheck.IsChecked = job.IsAssembly;
             Select(AsmBoltBox, job.BoltKind);
@@ -221,6 +230,8 @@ namespace BoltToolApp.UI
             WipeCheck.IsChecked = job.Wipeout;
             WipeLayerBox.Text = job.WipeoutLayer;
             SnapCheck.IsChecked = job.SnapLengthToStandard;
+            Select(NameStyleBox, job.NameStyle);
+            CustomNameBox.Text = job.CustomName ?? "";
             FillBase();
             RebuildStackUi();
             _loading = false;
@@ -247,6 +258,7 @@ namespace BoltToolApp.UI
             j.Length = Math.Max(1, Num(LengthBox.Text, j.Length));
             j.Thread = ThDetail.IsChecked == true ? ThreadStyle.Detailed : ThNone.IsChecked == true ? ThreadStyle.None : ThreadStyle.Simplified;
             j.BasePoint = TagOf(BaseBox, j.BasePoint);
+            j.ThreadStartLine = ThreadStartCheck.IsChecked == true;
 
             j.IsAssembly = AsmCheck.IsChecked == true;
             j.ClampLength = Math.Max(0, Num(ClampBox.Text, j.ClampLength));
@@ -262,6 +274,8 @@ namespace BoltToolApp.UI
             j.Wipeout = WipeCheck.IsChecked == true;
             if (!string.IsNullOrWhiteSpace(WipeLayerBox.Text)) j.WipeoutLayer = WipeLayerBox.Text.Trim();
             j.SnapLengthToStandard = SnapCheck.IsChecked == true;
+            j.NameStyle = TagOf(NameStyleBox, j.NameStyle);
+            j.CustomName = CustomNameBox.Text.Trim();
 
             if (stdChanged)
             {
@@ -275,6 +289,7 @@ namespace BoltToolApp.UI
             var j = _job; var r = j.Row;
             bool asm = j.IsAssembly;
             var lay = PartBuilder.ComputeLayout(j);
+            UpdateNamePreview();
             AsmPanel.IsEnabled = asm;
             AsmPanel.Opacity = asm ? 1 : 0.5;
             LengthPanel.Visibility = (asm || PartKindInfo.HasLength(j.Kind)) ? Visibility.Visible : Visibility.Hidden;
@@ -620,6 +635,183 @@ namespace BoltToolApp.UI
             StackChanged(true);
         }
 
+        // ================================================================ block name + saved sets
+
+        /// <summary>Live update of the name preview while the custom name is typed (the job is updated on Enter / leaving the box too).</summary>
+        void OnCustomNameTyped(object sender, TextChangedEventArgs e)
+        {
+            if (_loading || !IsInitialized) return;
+            _job.CustomName = CustomNameBox.Text.Trim();
+            UpdateNamePreview();
+        }
+
+        /// <summary>Shows below the "Block name" box what the next block will be called.</summary>
+        void UpdateNamePreview()
+        {
+            bool custom = _job.NameStyle == BlockNameStyle.Custom;
+            CustomNameBox.Visibility = custom ? Visibility.Visible : Visibility.Collapsed;
+            try
+            {
+                string view = _job.ViewCode();
+                string simple = BlockFactory.SimpleCode(_job) + (view == "SIDE" ? "" : "_" + view);
+                string text = _job.NameStyle switch
+                {
+                    BlockNameStyle.Full => Loc.T("Long name with standard, part code, size, view and a check code."),
+                    BlockNameStyle.SetName when string.IsNullOrWhiteSpace(_job.SetName) =>
+                        Loc.F("No saved set loaded – the simple name is used: {0}", simple),
+                    BlockNameStyle.SetName when !string.IsNullOrEmpty(_job.SetCode) && _job.SetCode != BlockFactory.SimpleCode(_job) =>
+                        Loc.F("The parts no longer match the set “{0}” – the simple name is used: {1}", _job.SetName, simple),
+                    BlockNameStyle.SetName => Loc.F("Next block: {0}", BlockFactory.Clean(_job.SetName.Trim()) + (view == "SIDE" ? "" : "_" + view)),
+                    BlockNameStyle.SizeOnly => Loc.F("Next block: {0}", BlockFactory.SizeOnlyName(simple)),
+                    BlockNameStyle.Custom when string.IsNullOrWhiteSpace(_job.CustomName) =>
+                        Loc.F("Type the block name above – until then the simple name is used: {0}", simple),
+                    BlockNameStyle.Custom => Loc.F("Next block: {0}", BlockFactory.CustomBlockName(_job.CustomName)),
+                    _ => Loc.F("Next block: {0}", simple)
+                };
+                NamePreviewText.Text = text + "  " + Loc.T("(_2, _3 … is added when that name already holds other geometry)");
+            }
+            catch { NamePreviewText.Text = ""; }
+        }
+
+        /// <summary>Fills the saved-set list and selects the set with the given name.</summary>
+        void FillSets(string select)
+        {
+            bool l = _loading; _loading = true;
+            SetBox.Items.Clear();
+            var sets = SavedSets.Load();
+            if (sets.Count == 0) SetBox.Items.Add(new ComboBoxItem { Content = Loc.T("(no saved sets yet – press Save…)"), Tag = null });
+            foreach (var s in sets)
+                SetBox.Items.Add(new ComboBoxItem { Content = s.ToString(), Tag = s, ToolTip = Summary(BoltJob.FromJson(s.Job)) });
+            int idx = 0;
+            for (int i = 0; i < SetBox.Items.Count; i++)
+                if (SetBox.Items[i] is ComboBoxItem it && it.Tag is SavedSet ss && string.Equals(ss.Name, select, StringComparison.OrdinalIgnoreCase)) idx = i;
+            SetBox.SelectedIndex = idx;
+            _loading = l;
+            ShowSetInfo();
+        }
+
+        SavedSet SelectedSet => SetBox.SelectedItem is ComboBoxItem it ? it.Tag as SavedSet : null;
+
+        void ShowSetInfo()
+        {
+            var s = SelectedSet;
+            SetLoadBtn.IsEnabled = SetDeleteBtn.IsEnabled = s != null;
+            SetInfoText.Text = s == null ? Loc.T("Save the current bolt and elements with a name and a comment, then load them again here.")
+                                         : Summary(BoltJob.FromJson(s.Job));
+        }
+
+        void OnSetSelected(object sender, SelectionChangedEventArgs e) { if (!_loading) ShowSetInfo(); }
+
+        /// <summary>Readable contents of a job: size, bolt, clamp and the elements on each side.</summary>
+        static string Summary(BoltJob j)
+        {
+            if (j == null) return "";
+            j.EnsureStack();
+            var lay = PartBuilder.ComputeLayout(j);
+            string N(PartKind k) => Loc.T(PartKindInfo.DisplayName(k));
+            if (!j.IsAssembly)
+                return $"{j.Standard} {j.Size} · {N(j.Kind)}" + (PartKindInfo.HasLength(j.Kind) ? $" · L = {F(j.Length)} mm" : "");
+            string head = string.Join(", ", j.Stack.Where(s => s.Side == StackSide.Head).Select(s => N(s.Kind)));
+            string nut = string.Join(", ", j.Stack.Where(s => s.Side == StackSide.Nut).Select(s => N(s.Kind)));
+            return $"{j.Standard} {j.Size} · {N(j.BoltKind)} L = {F(lay.BoltLength)} mm" + (j.AutoLength ? Loc.T(" (automatic)") : "")
+                 + $" · {Loc.T("clamp")} {F(j.ClampLength)} mm\n"
+                 + $"{Loc.T("Head side")}: {(head.Length > 0 ? head : "–")}\n"
+                 + $"{Loc.T("Nut side")}: {(nut.Length > 0 ? nut : "–")}";
+        }
+
+        void OnSetSave(object sender, RoutedEventArgs e)
+        {
+            ReadControls();
+            _job.EnsureStack();
+            string code = BlockFactory.SimpleCode(_job);
+            string startName = !string.IsNullOrWhiteSpace(_job.SetName) && _job.SetCode == code ? _job.SetName : code;
+            string startComment = _job.SetName == startName ? _job.SetComment : "";
+
+            // ---- small dialog: name (editable), contents (read only), comment ----
+            var dlg = new Window
+            {
+                Title = Loc.T("Save set"), Owner = this, SizeToContent = SizeToContent.Height, Width = 460,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner, ResizeMode = ResizeMode.NoResize,
+                ShowInTaskbar = false, Background = Brushes.White
+            };
+            var panel = new StackPanel { Margin = new Thickness(16) };
+            TextBlock Lbl(string t) => new() { Text = Loc.T(t), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 10, 0, 4) };
+            var nameBox = new TextBox { Text = startName, Padding = new Thickness(4, 3, 4, 3) };
+            var codeBtn = new Button { Content = Loc.F("Use the code {0}", code), Margin = new Thickness(0, 4, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 2, 8, 2) };
+            codeBtn.Click += (s2, e2) => nameBox.Text = code;
+            var contents = new TextBox
+            {
+                Text = Summary(_job.Clone()), IsReadOnly = true, TextWrapping = TextWrapping.Wrap, Background = new SolidColorBrush(Color.FromRgb(0xF4, 0xF6, 0xFA)),
+                Padding = new Thickness(4, 3, 4, 3)
+            };
+            var commentBox = new TextBox { Text = startComment ?? "", AcceptsReturn = false, Padding = new Thickness(4, 3, 4, 3) };
+            panel.Children.Add(Lbl("Name"));
+            panel.Children.Add(nameBox);
+            panel.Children.Add(codeBtn);
+            panel.Children.Add(Lbl("Contents – check size and elements"));
+            panel.Children.Add(contents);
+            panel.Children.Add(Lbl("Comment (optional, e.g. bolt for Gaday Okayama)"));
+            panel.Children.Add(commentBox);
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 14, 0, 0) };
+            var ok = new Button { Content = Loc.T("Save"), IsDefault = true, MinWidth = 80, Padding = new Thickness(8, 3, 8, 3) };
+            var cancel = new Button { Content = Loc.T("Cancel"), IsCancel = true, MinWidth = 80, Margin = new Thickness(8, 0, 0, 0), Padding = new Thickness(8, 3, 8, 3) };
+            ok.Click += (s2, e2) =>
+            {
+                string n = nameBox.Text.Trim();
+                if (n.Length == 0) { nameBox.Focus(); return; }
+                if (SavedSets.Exists(n) && !string.Equals(n, _job.SetName, StringComparison.OrdinalIgnoreCase) &&
+                    MessageBox.Show(dlg, Loc.F("A set named “{0}” already exists. Replace it?", n), Loc.T("Save set"),
+                                    MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+                dlg.DialogResult = true;
+            };
+            buttons.Children.Add(ok); buttons.Children.Add(cancel);
+            panel.Children.Add(buttons);
+            dlg.Content = panel;
+            dlg.Loaded += (s2, e2) => { nameBox.Focus(); nameBox.SelectAll(); };
+            if (dlg.ShowDialog() != true) return;
+
+            string name = nameBox.Text.Trim(), comment = commentBox.Text.Trim();
+            _job.SetName = name; _job.SetComment = comment; _job.SetCode = code;
+            var store = _job.Clone(); store.AssemblyId = null; store.Role = null;
+            try
+            {
+                SavedSets.Put(new SavedSet { Name = name, Comment = comment, Code = code, Saved = DateTime.Now, Job = store.ToJson() });
+                FillSets(name);
+                UpdateNamePreview();
+                Status("Set “{0}” saved.", name);
+            }
+            catch (Exception ex) { Status("Could not save the set: {0}", ex.Message); }
+        }
+
+        /// <summary>Loads the bolt, size, clamp and elements of the set; view and block settings stay as they are.</summary>
+        void OnSetLoad(object sender, RoutedEventArgs e)
+        {
+            var s = SelectedSet;
+            var j = s == null ? null : BoltJob.FromJson(s.Job);
+            if (j == null) return;
+            ReadControls();
+            var cur = _job;
+            j.Azimuth = cur.Azimuth; j.Elevation = cur.Elevation; j.Spin = cur.Spin;
+            j.Thread = cur.Thread; j.HiddenLines = cur.HiddenLines; j.Output = cur.Output; j.ViewSnap = cur.ViewSnap;
+            j.Scale = cur.Scale; j.Wipeout = cur.Wipeout; j.WipeoutLayer = cur.WipeoutLayer;
+            j.SnapLengthToStandard = cur.SnapLengthToStandard; j.NameStyle = cur.NameStyle;
+            j.AssemblyId = null; j.Role = null;
+            j.SetName = s.Name; j.SetComment = s.Comment; j.SetCode = s.Code;
+            LoadJob(j);
+            Status("Set “{0}” loaded.", s.Name);
+        }
+
+        void OnSetDelete(object sender, RoutedEventArgs e)
+        {
+            var s = SelectedSet;
+            if (s == null) return;
+            if (MessageBox.Show(this, Loc.F("Delete the saved set “{0}”?", s.Name), Loc.T("Saved sets"),
+                                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+            try { SavedSets.Delete(s.Name); } catch (Exception ex) { Status("Could not delete the set: {0}", ex.Message); return; }
+            FillSets(null);
+            Status("Set “{0}” deleted.", s.Name);
+        }
+
         // ================================================================ preview
 
         void Render(bool quality)
@@ -634,7 +826,7 @@ namespace BoltToolApp.UI
                 string viewKey = $"{j.Azimuth:0.##}|{j.Elevation:0.##}|{j.Spin:0.##}";
                 if (key != _meshKey) { _mesh = PartBuilder.BuildLayout(lay, r, j.Thread); _meshKey = key; Preview.ClearMeasures(); }
                 if (viewKey != _viewKey) { _viewKey = viewKey; Preview.ClearMeasures(); }      // measured points belong to one view
-                var dwg = HiddenLineRenderer.Render(_mesh, j.Azimuth, j.Elevation, j.Spin, j.HiddenLines, quality);
+                var dwg = HiddenLineRenderer.Render(_mesh, j.Azimuth, j.Elevation, j.Spin, j.HiddenLines, quality, j.ThreadStartLine);
                 Point Px(double x) { var p = dwg.Project(new Vec3(x, 0, 0)); return new Point(p.X, p.Y); }
                 var ax = dwg.Project(new Vec3(1, 0, 0)); var o0 = dwg.Project(new Vec3(0, 0, 0));
                 var axis = new Vector(ax.X - o0.X, ax.Y - o0.Y);

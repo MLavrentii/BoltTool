@@ -97,15 +97,50 @@ namespace BoltToolApp.Cad
             // of a block whose stored geometry differs from the newly requested dimensions.
             string geomKey = string.Join("|", "v5", std, job.Size, role,
                 string.Join(";", parts.Select(p => $"{p.Kind}:{Exact(p.X - baseX)}:{Exact(p.Length)}:{Exact(p.Thickness)}:{Exact(p.OuterR)}:{p.Item?.Side}")),
-                job.Thread, Exact(job.Azimuth), Exact(job.Elevation), Exact(job.Spin), job.HiddenLines, job.Output,
+                job.Thread, job.ThreadStartLine, Exact(job.Azimuth), Exact(job.Elevation), Exact(job.Spin), job.HiddenLines, job.Output,
                 Exact(job.Scale), job.Wipeout, job.WipeoutLayer, JsonSerializer.Serialize(row));
-            string name = $"{prefix}_{job.ViewCode()}_{Hash(geomKey)}".Replace('.', '_');
-
+            string hash = Hash(geomKey);
             var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
-            if (bt.Has(name)) return bt[name];
+            string name;
+            if (job.NameStyle != BlockNameStyle.Full)
+            {
+                // 12x40_BWSN: size, then the parts from the head side to the bolt end.
+                // Same name but different geometry -> _2, _3 … (the key is kept in the block comment).
+                string baseName = SimpleName(job, parts, lay, role);
+                if (job.NameStyle == BlockNameStyle.SizeOnly) baseName = SizeOnlyName(baseName);
+                if (job.NameStyle == BlockNameStyle.Custom && !string.IsNullOrWhiteSpace(job.CustomName))
+                {
+                    // exactly the typed name (no view suffix); separate blocks: <name>_<simple name of the part>
+                    string custom = CustomBlockName(job.CustomName);
+                    baseName = role == RoleAssembly || role == RoleSingle ? custom : $"{custom}_{baseName}";
+                }
+                if (job.NameStyle == BlockNameStyle.SetName && SetNameValid(job, lay))
+                {
+                    string set = Clean(job.SetName.Trim());
+                    string view = job.ViewCode();
+                    if (view != "SIDE") set += "_" + view;
+                    baseName = role == RoleAssembly || role == RoleSingle ? set : $"{set}_{baseName}";
+                }
+                string tag = $"[BT:{hash}]";
+                name = null;
+                for (int n = 1; n < 1000 && name == null; n++)
+                {
+                    string cand = n == 1 ? baseName : $"{baseName}_{n}";
+                    if (!bt.Has(cand)) { name = cand; break; }
+                    var old = (BlockTableRecord)tr.GetObject(bt[cand], OpenMode.ForRead);
+                    if (old.Comments != null && old.Comments.Contains(tag)) return old.ObjectId;
+                }
+                name ??= $"{baseName}_{hash}";
+            }
+            else
+            {
+                name = $"{prefix}_{job.ViewCode()}_{hash}".Replace('.', '_');
+                if (bt.Has(name)) return bt[name];
+            }
 
             var btr = new BlockTableRecord { Name = name, Origin = Point3d.Origin };
-            btr.Comments = $"{PartKindInfo.Designation(main.Kind, job.Standard)} {sizeTxt} – Bolt Tool";
+            string note = string.IsNullOrWhiteSpace(job.SetComment) || !SetNameValid(job, lay) ? "" : $" – {job.SetComment.Trim()}";
+            btr.Comments = $"{PartKindInfo.Designation(main.Kind, job.Standard)} {sizeTxt}{note} – Bolt Tool [BT:{hash}]";
             bt.UpgradeOpen();
             var id = bt.Add(btr);
             tr.AddNewlyCreatedDBObject(btr, true);
@@ -119,6 +154,60 @@ namespace BoltToolApp.Cad
             return id;
         }
 
+        /// <summary>Simple block name: "12x40_BWSN", "12_N", "12x40_BWlS_ChNH_ISO".
+        /// Size without the M, "x length" when there is a bolt, then the letters of all parts
+        /// from the head side to the bolt end, then the view when it is not the side view.</summary>
+        public static string SimpleName(BoltJob job, List<PlacedPart> parts, Layout lay, string role)
+        {
+            string d = (job.Size ?? "").TrimStart('M', 'm');
+            var bolt = parts.FirstOrDefault(p => p.Item == null && PartKindInfo.HasLength(p.Kind));
+            double len = role == RoleAssembly ? lay.BoltLength : bolt?.Length ?? 0;
+            string size = bolt != null && len > 0 ? $"{d}x{Fmt(len)}" : d;
+
+            var ordered = parts.Where(p => p.Item == null).Concat(parts.Where(p => p.Item != null).OrderBy(p => p.X));
+            string letters = string.Concat(ordered.Select(p => PartKindInfo.ShortCode(p.Kind)));
+
+            string view = job.ViewCode();
+            return Clean(view == "SIDE" ? $"{size}_{letters}" : $"{size}_{letters}_{view}");
+        }
+
+        /// <summary>Typed name made safe for AutoCAD (forbidden characters -> _, max. 200 characters).</summary>
+        public static string CustomBlockName(string typed)
+        {
+            string n = Clean((typed ?? "").Trim());
+            return n.Length > 200 ? n.Substring(0, 200) : n;
+        }
+
+        /// <summary>"12x40_BWSN" -> "12x40", "12x40_BWSN_ISO" -> "12x40_ISO". Names without a length ("12_N") stay,
+        /// otherwise a nut and a washer of the same size would both be called "12".</summary>
+        public static string SizeOnlyName(string simple)
+        {
+            var parts = simple.Split('_');
+            if (parts.Length < 2 || !parts[0].Contains('x')) return simple;
+            var keep = new System.Collections.Generic.List<string> { parts[0] };
+            keep.AddRange(parts.Skip(2));          // view suffix
+            return string.Join("_", keep);
+        }
+
+        /// <summary>Simple code of the whole job without view, e.g. "12x40_BWSN" (used as default set name).</summary>
+        public static string SimpleCode(BoltJob job)
+        {
+            var lay = PartBuilder.ComputeLayout(job);
+            var j = job.Clone(); j.Azimuth = 0; j.Elevation = 0; j.Output = OutputMode.View2D;
+            return SimpleName(j, lay.Parts, lay, job.IsAssembly ? RoleAssembly : RoleSingle);
+        }
+
+        /// <summary>The set name is only used while the parts still match the saved set.</summary>
+        static bool SetNameValid(BoltJob job, Layout lay) =>
+            !string.IsNullOrWhiteSpace(job.SetName) && (string.IsNullOrEmpty(job.SetCode) || job.SetCode == SimpleCode(job));
+
+        /// <summary>Removes characters AutoCAD does not allow in block names.</summary>
+        public static string Clean(string name)
+        {
+            foreach (char c in "<>/\\\":;?*|,=`") name = name.Replace(c, '_');
+            return name.Trim();
+        }
+
         static void Style(Entity e, LineStyle st, Database db, Transaction tr)
         {
             e.Layer = "0";
@@ -129,7 +218,7 @@ namespace BoltToolApp.Cad
 
         static void Write2D(Database db, Transaction tr, BlockTableRecord btr, BoltJob job, Mesh mesh, double baseX)
         {
-            var dwg = HiddenLineRenderer.Render(mesh, job.Azimuth, job.Elevation, job.Spin, job.HiddenLines, true);
+            var dwg = HiddenLineRenderer.Render(mesh, job.Azimuth, job.Elevation, job.Spin, job.HiddenLines, true, job.ThreadStartLine);
             var o = dwg.Project(new Vec3(baseX, 0, 0));
             double sc = job.Scale;
             Point2d P(P2 p) => new((p.X - o.X) * sc, (p.Y - o.Y) * sc);

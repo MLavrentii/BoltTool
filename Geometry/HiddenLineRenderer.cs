@@ -43,7 +43,7 @@ namespace BoltToolApp.Geometry
         public const double CreaseDeg = 15;
 
         public static Drawing2D Render(Mesh mesh, double azimuth, double elevation, double spin,
-                                       bool hiddenLines, bool quality = true)
+                                       bool hiddenLines, bool quality = true, bool threadStartLine = true)
         {
             var R = Mat3.View(azimuth, elevation, spin);
             var d = new Drawing2D { View = R };
@@ -128,7 +128,7 @@ namespace BoltToolApp.Geometry
             var toViewer = R.Transposed().Apply(new Vec3(0, 0, 1));
             var axis = new Vec3(1, 0, 0);
             foreach (var th in mesh.Threads)
-                foreach (var ov in ThreadOverlays(th, axis, toViewer))
+                foreach (var ov in ThreadOverlays(th, axis, toViewer, threadStartLine))
                     mesh.Overlays.Add(ov);
             foreach (var ov in mesh.Overlays)
             {
@@ -192,7 +192,7 @@ namespace BoltToolApp.Geometry
             }
         }
 
-        static IEnumerable<Overlay> ThreadOverlays(ThreadInfo th, Vec3 axis, Vec3 toViewer)
+        static IEnumerable<Overlay> ThreadOverlays(ThreadInfo th, Vec3 axis, Vec3 toViewer, bool startLine)
         {
             var cr = axis.Cross(toViewer);
             double along = axis.Dot(toViewer);
@@ -201,6 +201,7 @@ namespace BoltToolApp.Geometry
                 if (cr.Length > 0.05)
                 {
                     var u = cr.Normalized();
+                    if (!th.MarkOnly)
                     foreach (double sgn in new[] { 1.0, -1.0 })
                     {
                         var o = new Overlay { IgnoreGroup = th.Group, Style = LineStyle.Thin, IsThreadOverlay = true };
@@ -208,10 +209,12 @@ namespace BoltToolApp.Geometry
                         o.Points.Add(new Vec3(th.X1, 0, 0) + u * (sgn * th.RMinor));
                         yield return o;
                     }
-                    if (th.ShowTermination)
+                    if (th.ShowTermination && startLine)
                     {
+                        // thread start line (ISO 6410: continuous thick line) = visible half of the major-diameter circle;
+                        // in the side view this is a straight line across the bolt
                         var vp = (toViewer - axis * along).Normalized();
-                        var o = new Overlay { IgnoreGroup = th.Group, Style = LineStyle.Thin, IsThreadOverlay = true };
+                        var o = new Overlay { IgnoreGroup = th.Group, Style = LineStyle.Visible, IsThreadOverlay = true };
                         for (int i = 0; i <= 24; i++)
                         {
                             double phi = Math.PI * i / 24;

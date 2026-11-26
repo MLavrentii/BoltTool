@@ -176,6 +176,29 @@ AssemblyId, Role
 16. **Channel nut (2026-11-12, not compiled yet):** `PartKind.ChannelNut` for 41 mm strut channel (ダクターチャンネル): rectangle 35 × 20 × 0.8·d (M ≤ 16; 40 long above), two opposite corners cut, two V-grooves on the face that grips the channel lips (`PartBuilder.BuildChannelNut`, `Mesh.LoftAngles`). Dimensions are an approximation (catalogue M10 nut 35 × 20 × 8). Preset "Channel nut set" = spring washer + large washer under the head, channel nut on the nut side. `PartKind.ChannelNutHolder` = 翼型ナット + 固定ブロック (from the installation drawing): holder plate 46 × 28 × 2 mm along the channel with V-notches and two wing tabs, Ø18 collar in the slot (height = lip thickness, default 2.5, changed via the T override), metal channel nut below (`BuildChannelNutHolder`, `Mesh.MirroredX`). The "Channel nut set" preset uses it. Holder dimensions are approximations – verify with the maker.
 17. **Clamp squeeze + label (2026-11-12, not compiled yet):** `ClampLength` may be 0. Ctrl+dragging the first nut-side element toward the head first uses up its gap, then reduces `ClampLength` (down to 0) instead of stopping at the clamp face (`StackMover.MoveLimits` lo = -(gap + clamp), `Move` squeeze). The red label in the preview now shows the distance from the element just before the selected one (or from under the head). Checked in `tests/Program.cs`.
 
+18. **Block names + saved sets (2026-11-26, not compiled yet):**
+    - `BoltJob.NameStyle` (`BlockNameStyle.Simple` default / `Full` = old `BT_…_HASH` / `SetName`), combo `NameStyleBox`
+      on View & Block with a live preview line (`UpdateNamePreview`). `BlockFactory.SimpleName()` ->
+      `<d>x<L>_<letters>[_<view>]`, letters from `PartKindInfo.ShortCode` (B, Bf, Sc, R, N, Nt, Nf, W, Wl, S, ChN, ChNH),
+      bolt first, then elements by X. `BlockFactory.SimpleCode(job)` = the same without view.
+    - Simple / SetName names are made unique with `_2`, `_3`; the geometry hash is kept in the block comment as
+      `[BT:<hash>]` and an existing block with the same tag is reused.
+    - Saved sets: `Data/SavedSets.cs`, file `%APPDATA%\BoltTool\saved_sets.json` (`SavedSet { Name, Comment, Code,
+      Saved, Job }`). UI on top of the Assembly tab (`SetBox`, Load / Save… / Delete, `SetInfoText`). Save dialog built in
+      code (`OnSetSave`): name (default = code), read-only contents (`Summary`), comment. Load (`OnSetLoad`) keeps the
+      current view / block / name settings and sets `job.SetName / SetComment / SetCode`.
+    - SetName style is used only while `SimpleCode(job) == SetCode`; separate blocks get `<set>_<simple>`; the comment
+      goes into the block description.
+19. **Thread start line (2026-11-26, not compiled yet):** `BoltJob.ThreadStartLine` (default true, `ThreadStartCheck`
+    under Thread on the Part tab). `ThreadInfo.MarkOnly` = thread style None on a partial bolt: only the start line, no
+    root lines. `HiddenLineRenderer.Render(..., threadStartLine)`; the line is now `LineStyle.Visible` (was Thin).
+    Part of the block cache key.
+20. **Name style SizeOnly (2026-11-26):** `BlockNameStyle.SizeOnly` -> `BlockFactory.SizeOnlyName(simple)`: drops the letters
+    when the name has a length (`12x40_BWSN_ISO` -> `12x40_ISO`), keeps `12_N`. Collisions -> `_2`.
+21. **Name style Custom (2026-11-26):** `BlockNameStyle.Custom` + `BoltJob.CustomName`, text box `CustomNameBox` (shown only
+    for Custom, live preview via `OnCustomNameTyped`). `BlockFactory.CustomBlockName()` cleans it; separate blocks get
+    `<name>_<simple>`; empty -> simple name; collisions -> `_2`.
+
 ## 7. Things to check next
 
 - Run `tests/BoltTool.CoreTests.csproj` (no AutoCAD needed) and fix any failing check.

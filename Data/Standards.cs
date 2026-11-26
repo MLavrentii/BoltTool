@@ -93,6 +93,25 @@ namespace BoltToolApp.Data
             PartKind.ChannelNutHolder => "NUTCH",
             _ => "P"
         };
+
+        /// <summary>Short letter(s) used in simple block names (e.g. 12x40_BWSN).
+        /// Single capital = common part; capital + small letters = special part.</summary>
+        public static string ShortCode(PartKind k) => k switch
+        {
+            PartKind.HexBolt => "B",
+            PartKind.HexBoltFullThread => "Bf",
+            PartKind.SocketCapScrew => "Sc",
+            PartKind.ThreadedRod => "R",
+            PartKind.HexNut => "N",
+            PartKind.ThinNut => "Nt",
+            PartKind.FlangeNut => "Nf",
+            PartKind.PlainWasher => "W",
+            PartKind.LargeWasher => "Wl",
+            PartKind.SpringWasher => "S",
+            PartKind.ChannelNut => "ChN",
+            PartKind.ChannelNutHolder => "ChNH",
+            _ => "P"
+        };
     }
 
     /// <summary>All dimensions in mm for one nominal size. Values are typical catalogue values –

@@ -333,11 +333,13 @@ namespace BoltToolApp.Geometry
                     m.TriGroup[t] = mx <= k + 1e-9 ? head : shank;
                 }
 
-            if (thread == ThreadStyle.Simplified)
+            bool partial = !rod && xT0 > k + 1e-6;
+            if (thread == ThreadStyle.Simplified || (thread == ThreadStyle.None && partial))
                 m.Threads.Add(new ThreadInfo
                 {
                     X0 = xT0, X1 = xE - c, RMajor = rs, RMinor = rMin, Group = shank,
-                    ShowTermination = !rod && xT0 > k + 1e-6
+                    ShowTermination = partial,
+                    MarkOnly = thread == ThreadStyle.None     // no thread drawn, only where it would start
                 });
         }
 

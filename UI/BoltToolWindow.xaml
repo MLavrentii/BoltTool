@@ -242,6 +242,7 @@
                                     <RadioButton x:Name="ThSimple" Content="Simplified" Style="{StaticResource Seg}" GroupName="th" Checked="OnChanged"/>
                                     <RadioButton x:Name="ThDetail" Content="Detailed (helix)" Style="{StaticResource Seg}" GroupName="th" Checked="OnChanged"/>
                                 </StackPanel>
+                                <CheckBox x:Name="ThreadStartCheck" Content="Line where the thread starts (partial thread)" Margin="0,8,0,0" Checked="OnChanged" Unchecked="OnChanged"/>
 
                                 <TextBlock Text="Dimensions" Style="{StaticResource Section}"/>
                                 <WrapPanel x:Name="DimPanel" Margin="0,6,0,0"/>
@@ -257,6 +258,20 @@
                     <TabItem Header="Assembly">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="0,0,6,16">
+                                <TextBlock Text="Saved sets" Style="{StaticResource Section}"/>
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox x:Name="SetBox" SelectionChanged="OnSetSelected"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="6,0,0,0">
+                                        <Button x:Name="SetLoadBtn" Style="{StaticResource Chip}" Content="Load" Click="OnSetLoad"/>
+                                        <Button x:Name="SetSaveBtn" Style="{StaticResource Chip}" Content="Save…" Click="OnSetSave"/>
+                                        <Button x:Name="SetDeleteBtn" Style="{StaticResource Chip}" Content="Delete" Click="OnSetDelete"/>
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock x:Name="SetInfoText" Style="{StaticResource Hint}"/>
                                 <CheckBox x:Name="AsmCheck" Content="Create a bolted connection (bolt + washers + nut)" FontWeight="SemiBold"
                                           Checked="OnChanged" Unchecked="OnChanged" Margin="0,14,0,0"/>
                                 <StackPanel x:Name="AsmPanel">
@@ -381,6 +396,11 @@
                                 <ComboBox x:Name="WipeLayerBox" IsEditable="True" LostFocus="OnChanged" SelectionChanged="OnChanged"/>
                                 <TextBlock Style="{StaticResource Hint}" Text="All lines are created on layer 0 with colour / linetype / lineweight ByBlock – only wipeouts go on this layer."/>
                                 <CheckBox x:Name="SnapCheck" Content="Length grip snaps to standard lengths" Checked="OnChanged" Unchecked="OnChanged"/>
+                                <TextBlock Text="Block name" Style="{StaticResource Label}"/>
+                                <ComboBox x:Name="NameStyleBox" SelectionChanged="OnChanged"/>
+                                <TextBox x:Name="CustomNameBox" Margin="0,6,0,0" Visibility="Collapsed"
+                                         TextChanged="OnCustomNameTyped" LostFocus="OnChanged" KeyDown="OnEnterKey"/>
+                                <TextBlock x:Name="NamePreviewText" Style="{StaticResource Hint}"/>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>

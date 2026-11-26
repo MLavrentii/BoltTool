@@ -66,7 +66,8 @@ namespace BoltToolApp.Geometry
         public double X0, X1;               // threaded range along the axis
         public double RMajor, RMinor;
         public bool Internal;               // nut thread
-        public bool ShowTermination;        // line where the thread ends (partial thread bolts)
+        public bool ShowTermination;        // line where the thread starts (partial thread bolts)
+        public bool MarkOnly;               // thread style "None": only the thread-start line, no root lines
         public int Group;
     }
 
@@ -121,7 +122,7 @@ namespace BoltToolApp.Geometry
                 Threads.Add(new ThreadInfo
                 {
                     X0 = th.X0 + dx, X1 = th.X1 + dx, RMajor = th.RMajor, RMinor = th.RMinor,
-                    Internal = th.Internal, ShowTermination = th.ShowTermination, Group = th.Group + gOff
+                    Internal = th.Internal, ShowTermination = th.ShowTermination, MarkOnly = th.MarkOnly, Group = th.Group + gOff
                 });
             foreach (var o in other.Overlays)
             {
@@ -154,7 +155,7 @@ namespace BoltToolApp.Geometry
                 m.Threads.Add(new ThreadInfo
                 {
                     X0 = length - th.X1, X1 = length - th.X0, RMajor = th.RMajor, RMinor = th.RMinor,
-                    Internal = th.Internal, ShowTermination = th.ShowTermination, Group = th.Group
+                    Internal = th.Internal, ShowTermination = th.ShowTermination, MarkOnly = th.MarkOnly, Group = th.Group
                 });
             m.GroupCount = GroupCount;
             return m;
