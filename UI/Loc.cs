@@ -648,6 +648,7 @@ namespace BoltToolApp.UI
             ["Head side"] = "頭側",
             ["Nut side"] = "ナット側",
             ["Save set"] = "セットを保存",
+            ["“{0}” is already saved – saving will replace it (you will be asked)."] = "「{0}」は保存済み – 保存すると置き換えます（確認あり）。",
             ["Use the code {0}"] = "コード {0} を使用",
             ["Name"] = "名前",
             ["Contents – check size and elements"] = "内容 – サイズと部品を確認",

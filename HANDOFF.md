@@ -215,6 +215,9 @@ AssemblyId, Role
     dropped. `ComputeLayout` warns when the first nut-side nut sits on the unthreaded shank.
 27. **Measure mode Auto (2026-11-26, default):** `MeasureMode.Auto` -> `AutoMode()` picks AlongAxis / AcrossAxis by the larger
     component (= horizontal / vertical in the side view); end views fall back to screen horizontal / vertical.
+28. **Re-save / overwrite sets (2026-11-26):** the Save dialog name is an editable ComboBox of all saved sets. Pre-filled with the
+    last loaded / saved set (`job.SetName`), else the set chosen in `SetBox`, else the code. Picking a set fills its comment;
+    a red line warns when the name exists; overwriting always asks (MessageBox). Wheel over the closed name list is ignored.
 
 ## 7. Things to check next
 

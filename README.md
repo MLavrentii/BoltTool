@@ -92,7 +92,7 @@ for a pop-up explanation. The window reopens in the state it was closed in.
 
 | Control | Meaning |
 |---|---|
-| Saved sets | Your own saved bolt + element sets. Choose one and press **Load** (size, bolt, length, clamp and elements are loaded; view, scale, wipeout and name settings stay). **Save…** opens a dialog: the name starts as the code (`12x40_BWSN`) and can be changed, the contents (size and elements) are shown for checking, and you can add a comment such as *bolt for Gaday Okayama*. **Delete** removes a set. Saving with an existing name asks before replacing |
+| Saved sets | Your own saved bolt + element sets. Choose one and press **Load** (size, bolt, length, clamp and elements are loaded; view, scale, wipeout and name settings stay). **Save…** opens a dialog: the name starts as the code (`12x40_BWSN`) and can be changed, the contents (size and elements) are shown for checking, and you can add a comment such as *bolt for Gaday Okayama*. **Delete** removes a set. Saving with an existing name asks before replacing. **To change a saved set:** load it, change what you need, press **Save…** – the name and comment of the last loaded / saved set (or the set chosen in the list) are filled in. The name field is also a list of all saved sets: pick one to overwrite it (its comment is filled in). Saving over an existing set always asks first. Type a new name (or press *Use the code*) to save a new set |
 | Create a bolted connection | On: bolt + washers + nuts together. Off: only the single part from the Part tab |
 | Bolt | Bolt type used in the connection |
 | Clamp length | Total thickness of the parts the bolt holds together. 0 is allowed – the head-side and nut-side elements then touch |

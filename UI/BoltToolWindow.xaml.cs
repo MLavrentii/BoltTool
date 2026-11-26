@@ -812,8 +812,15 @@ namespace BoltToolApp.UI
             ReadControls();
             _job.EnsureStack();
             string code = BlockFactory.SimpleCode(_job);
-            string startName = !string.IsNullOrWhiteSpace(_job.SetName) && _job.SetCode == code ? _job.SetName : code;
-            string startComment = _job.SetName == startName ? _job.SetComment : "";
+            // a loaded set is offered again with its name and comment -> Save overwrites it (re-save after changes);
+            // "Use the code" or another name saves a new set
+            // start with the last loaded / saved set, else the set chosen in the list, else the size code
+            var allSets = SavedSets.Load();
+            SavedSet Find(string n) => allSets.FirstOrDefault(x => string.Equals(x.Name, n?.Trim(), StringComparison.OrdinalIgnoreCase));
+            var startSet = Find(_job.SetName) ?? (SelectedSet != null ? Find(SelectedSet.Name) : null);
+            bool loaded = startSet != null;
+            string startName = loaded ? startSet.Name : code;
+            string startComment = loaded ? startSet.Comment : "";
 
             // ---- small dialog: name (editable), contents (read only), comment ----
             var dlg = new Window
@@ -824,7 +831,10 @@ namespace BoltToolApp.UI
             };
             var panel = new StackPanel { Margin = new Thickness(16) };
             TextBlock Lbl(string t) => new() { Text = Loc.T(t), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 10, 0, 4) };
-            var nameBox = new TextBox { Text = startName, Padding = new Thickness(4, 3, 4, 3) };
+            // name: type a new one or pick a saved set from the list (its comment is filled in)
+            var nameBox = new ComboBox { IsEditable = true, IsTextSearchEnabled = false, Padding = new Thickness(4, 3, 4, 3) };
+            foreach (var x in allSets) nameBox.Items.Add(x.Name);
+            nameBox.Text = startName;
             var codeBtn = new Button { Content = Loc.F("Use the code {0}", code), Margin = new Thickness(0, 4, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 2, 8, 2) };
             codeBtn.Click += (s2, e2) => nameBox.Text = code;
             var contents = new TextBox
@@ -833,8 +843,32 @@ namespace BoltToolApp.UI
                 Padding = new Thickness(4, 3, 4, 3)
             };
             var commentBox = new TextBox { Text = startComment ?? "", AcceptsReturn = false, Padding = new Thickness(4, 3, 4, 3) };
+            var overwriteHint = new TextBlock { Foreground = Brushes.Firebrick, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
+            void NameChanged()
+            {
+                var hit = Find(nameBox.Text);
+                overwriteHint.Text = hit != null ? Loc.F("“{0}” is already saved – saving will replace it (you will be asked).", hit.Name) : "";
+            }
+            nameBox.SelectionChanged += (s2, e2) =>
+            {
+                if (nameBox.SelectedItem is string picked)
+                {
+                    var hit = Find(picked);
+                    if (hit != null) commentBox.Text = hit.Comment ?? "";
+                }
+                NameChanged();
+            };
+            nameBox.AddHandler(System.Windows.Controls.Primitives.TextBoxBase.TextChangedEvent,
+                               new TextChangedEventHandler((s2, e2) => NameChanged()));
+            // the wheel must not switch the name while the list is closed
+            dlg.AddHandler(PreviewMouseWheelEvent, new MouseWheelEventHandler((s2, e2) =>
+            {
+                if (nameBox.IsMouseOver && !nameBox.IsDropDownOpen) e2.Handled = true;
+            }), true);
+            NameChanged();
             panel.Children.Add(Lbl("Name"));
             panel.Children.Add(nameBox);
+            panel.Children.Add(overwriteHint);
             panel.Children.Add(codeBtn);
             panel.Children.Add(Lbl("Contents – check size and elements"));
             panel.Children.Add(contents);
@@ -847,7 +881,7 @@ namespace BoltToolApp.UI
             {
                 string n = nameBox.Text.Trim();
                 if (n.Length == 0) { nameBox.Focus(); return; }
-                if (SavedSets.Exists(n) && !string.Equals(n, _job.SetName, StringComparison.OrdinalIgnoreCase) &&
+                if (SavedSets.Exists(n) &&
                     MessageBox.Show(dlg, Loc.F("A set named “{0}” already exists. Replace it?", n), Loc.T("Save set"),
                                     MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
                 dlg.DialogResult = true;
@@ -855,7 +889,11 @@ namespace BoltToolApp.UI
             buttons.Children.Add(ok); buttons.Children.Add(cancel);
             panel.Children.Add(buttons);
             dlg.Content = panel;
-            dlg.Loaded += (s2, e2) => { nameBox.Focus(); nameBox.SelectAll(); };
+            dlg.Loaded += (s2, e2) =>
+            {
+                nameBox.Focus();
+                if (nameBox.Template?.FindName("PART_EditableTextBox", nameBox) is TextBox tb) tb.SelectAll();
+            };
             if (dlg.ShowDialog() != true) return;
 
             string name = nameBox.Text.Trim(), comment = commentBox.Text.Trim();
