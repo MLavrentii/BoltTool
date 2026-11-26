@@ -219,6 +219,7 @@
                                     <StackPanel>
                                         <TextBlock Text="Size" Style="{StaticResource Label}"/>
                                         <ComboBox x:Name="SizeBox" SelectionChanged="OnSizeChanged"/>
+                                        <CheckBox x:Name="SizeResetCheck" Content="Elements back to standard size" IsChecked="True" Margin="0,6,0,0"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" x:Name="LengthPanel">
                                         <TextBlock Text="Length L (mm)" Style="{StaticResource Label}"/>

@@ -218,6 +218,8 @@ AssemblyId, Role
 28. **Re-save / overwrite sets (2026-11-26):** the Save dialog name is an editable ComboBox of all saved sets. Pre-filled with the
     last loaded / saved set (`job.SetName`), else the set chosen in `SetBox`, else the code. Picking a set fills its comment;
     a red line warns when the name exists; overwriting always asks (MessageBox). Wheel over the closed name list is ignored.
+29. **Reset element sizes on size change (2026-11-26):** `SizeResetCheck` under Size (UiState.ResetOnSizeChange, default true).
+    `OnSizeChanged` clears StackItem.Thickness / OuterD and job.ThreadLength; gaps stay.
 
 ## 7. Things to check next
 

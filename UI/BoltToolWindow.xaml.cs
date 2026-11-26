@@ -1107,6 +1107,13 @@ namespace BoltToolApp.UI
             ReadControls();
             // take the most used length for the new size; element sizes follow the new size
             _job.Length = _job.Row.DefaultLength;
+            if (SizeResetCheck.IsChecked == true)
+            {
+                // own thickness / outer Ø / thread length belonged to the old size -> standard values of the new size
+                _job.EnsureStack();
+                foreach (var it in _job.Stack) { it.Thickness = 0; it.OuterD = 0; }
+                _job.ThreadLength = 0;
+            }
             _loading = true; LengthBox.Text = F(_job.Length); Select(TqSizeBox, _job.Size); _loading = false;
             RebuildStackUi();
             UpdateDependent();
@@ -1277,7 +1284,8 @@ namespace BoltToolApp.UI
                     TqLube = TqLubeBox.SelectedIndex, TqMaterial = TqMatBox.SelectedIndex,
                     TqMuG = TqMuG.Text, TqMuK = TqMuK.Text, TqUtil = TqUtil.Text,
                     TqWasher = TqWasher.IsChecked == true,
-                    ShowWipeouts = ShowWipeToggle.IsChecked == true
+                    ShowWipeouts = ShowWipeToggle.IsChecked == true,
+                    ResetOnSizeChange = SizeResetCheck.IsChecked == true
                 });
             }
             catch { /* never block closing */ }
@@ -1302,6 +1310,7 @@ namespace BoltToolApp.UI
                 }
                 SelectTab(u.Tab);
                 ShowWipeToggle.IsChecked = u.ShowWipeouts;
+                SizeResetCheck.IsChecked = u.ResetOnSizeChange;
 
                 _loading = true;
                 void Pick(ComboBox cb, int i) { if (i >= 0 && i < cb.Items.Count) cb.SelectedIndex = i; }

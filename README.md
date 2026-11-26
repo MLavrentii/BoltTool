@@ -79,6 +79,7 @@ for a pop-up explanation. The window reopens in the state it was closed in.
 | Standard | ISO or JIS dimensions |
 | Part | Hex bolt (partial / full thread), socket head cap screw, threaded rod, hex nut, thin nut, flange nut, channel nut, channel nut + holder, plain washer, large washer, spring lock washer |
 | Size | M3 … M48. Changing it loads the default length of that size |
+| Elements back to standard size | On (default): a new size also resets typed thicknesses, outer diameters and the thread length to the standard values of the new size. Off: typed values are kept. Gaps are always kept |
 | Length L | Length under the head (threaded rod: total length). Pick a standard length or type any value |
 | Set as default | Stores the current length as the default for this size |
 | Insertion / connection point | Where the block origin 0,0,0 sits on the axis (see Block rules). Bolts and assemblies also offer **Under head** = centre of the flat head face that points toward the bolt end |

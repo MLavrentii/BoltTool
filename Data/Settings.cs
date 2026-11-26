@@ -23,6 +23,7 @@ namespace BoltToolApp.Data
         public string TqUtil { get; set; }
         public bool TqWasher { get; set; } = true;
         public bool ShowWipeouts { get; set; } = true;
+        public bool ResetOnSizeChange { get; set; } = true;
     }
 
     public static class Settings
