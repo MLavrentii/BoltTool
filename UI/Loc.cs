@@ -112,7 +112,7 @@ namespace BoltToolApp.UI
             ["WipeLayerBox"] = "Layer for the wipeouts. Pick one from the drawing or type a new name – it is created automatically.",
             ["ThreadStartCheck"] = "On: a partially threaded bolt gets a line across the shank where the thread starts (thread length b from the bolt end). Works with None and Simplified thread; the detailed helix always shows its start edge. Full-thread bolts and rods have no such line.",
             ["CustomNameBox"] = "Block name to use, e.g. Okayama_M16_anchor. Characters AutoCAD does not allow (< > / \\ \" : ; ? * | , = `) become _. If a block with this name but other geometry exists, _2, _3 … is added.",
-            ["MeasureModeBox"] = "How Shift+click measures. Aligned: straight between the two points. Horizontal / Vertical: only the 0° or 90° part on the screen (like DIMLINEAR). Along the bolt: parallel to the bolt axis, shows the real axial distance also in iso views. Across the bolt: 90° to the bolt axis.",
+            ["MeasureModeBox"] = "How Shift+click measures. Auto 0° / 90° (default): like DIMLINEAR – along or across the bolt, whichever is larger (horizontal / vertical in the side view). Aligned: straight between the two points. Horizontal / Vertical: only the 0° or 90° part on the screen (like DIMLINEAR). Along the bolt: parallel to the bolt axis, shows the real axial distance also in iso views. Across the bolt: 90° to the bolt axis.",
             ["ThreadLenBox"] = "Length of the thread measured from the bolt end. The box shows the value in use – type a bigger or smaller one and press Enter. Standard (or an empty box) = the standard value, which follows the bolt length. Longer than the bolt = threaded to the head; the shortest is tip chamfer + 2 pitches.",
             ["NameStyleBox"] = "How new blocks are named. Simple: size + one letter per part from the head side to the bolt end (B bolt, Bf full-thread bolt, Sc socket cap screw, R rod, N nut, Nt thin nut, Nf flange nut, W washer, Wl large washer, S spring washer, ChN channel nut, ChNH channel nut + holder). Full: the long technical name. Size only: just size x length, e.g. 12x40 (nuts and washers alone keep their letter: 12_N). Saved set name: the name of the loaded saved set, as long as its parts are unchanged. Custom: type any name; separate blocks get <name>_<part>. Views other than side add _ISO, _TOP …",
             ["SetBox"] = "Your saved sets (bolt, size, clamp and elements). Choose one and press Load. Hover an entry to see what it contains.",
@@ -674,6 +674,7 @@ namespace BoltToolApp.UI
             ["On: a partially threaded bolt gets a line across the shank where the thread starts (thread length b from the bolt end). Works with None and Simplified thread; the detailed helix always shows its start edge. Full-thread bolts and rods have no such line."] = "オン: 部分ねじボルトのねじが始まる位置（先端からねじ長さ b）に軸を横切る線を描きます。ねじ表示「なし」「簡易」で有効。詳細（らせん）は常に始まりの稜線が出ます。全ねじボルトと寸切りボルトには線はありません。",
             ["Measure"] = "計測",
             ["Aligned"] = "平行（2点間）",
+            ["Auto 0° / 90°"] = "自動 0° / 90°",
             ["Horizontal (0°)"] = "水平 (0°)",
             ["Vertical (90°)"] = "垂直 (90°)",
             ["Along the bolt"] = "ボルト軸方向",
@@ -687,7 +688,7 @@ namespace BoltToolApp.UI
             ["Shortest possible: {0} mm."] = "最短 {0} mm。",
             ["Enter a number in mm."] = "mm の数値を入力してください。",
             ["Under head – centre of the head face toward the bolt end"] = "首下 – 頭部のボルト先端側の面の中心",
-            ["How Shift+click measures. Aligned: straight between the two points. Horizontal / Vertical: only the 0° or 90° part on the screen (like DIMLINEAR). Along the bolt: parallel to the bolt axis, shows the real axial distance also in iso views. Across the bolt: 90° to the bolt axis."] = "Shift+クリック計測の方法。平行: 2点間の直線距離。水平 / 垂直: 画面上の 0° / 90° 成分のみ（DIMLINEAR と同様）。ボルト軸方向: 軸に平行、アイソメでも実際の軸方向距離を表示。軸に直角: 軸に 90° の方向。",
+            ["How Shift+click measures. Auto 0° / 90° (default): like DIMLINEAR – along or across the bolt, whichever is larger (horizontal / vertical in the side view). Aligned: straight between the two points. Horizontal / Vertical: only the 0° or 90° part on the screen (like DIMLINEAR). Along the bolt: parallel to the bolt axis, shows the real axial distance also in iso views. Across the bolt: 90° to the bolt axis."] = "Shift+クリック計測の方法。自動 0°/90°（既定）: DIMLINEAR と同様、ボルト軸方向か直角方向の大きい方（側面図では水平／垂直）。平行: 2点間の直線距離。水平 / 垂直: 画面上の 0° / 90° 成分のみ（DIMLINEAR と同様）。ボルト軸方向: 軸に平行、アイソメでも実際の軸方向距離を表示。軸に直角: 軸に 90° の方向。",
             ["Length of the thread measured from the bolt end. The box shows the value in use – type a bigger or smaller one and press Enter. Standard (or an empty box) = the standard value, which follows the bolt length. Longer than the bolt = threaded to the head; the shortest is tip chamfer + 2 pitches."] = "ボルト先端から測ったねじ部の長さ。現在の値が表示されるので、長く／短く入力して Enter。「標準」（または空欄）で標準値に戻り、ボルト長さに追従します。ボルトより長い場合は首下までねじ。最短は先端面取り＋2ピッチ。",
         };
     }

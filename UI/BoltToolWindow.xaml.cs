@@ -148,6 +148,7 @@ namespace BoltToolApp.UI
 
             int mm = Math.Max(0, MeasureModeBox.SelectedIndex);
             MeasureModeBox.Items.Clear();
+            MeasureModeBox.Items.Add(Item("Auto 0° / 90°", PreviewControl.MeasureMode.Auto));
             MeasureModeBox.Items.Add(Item("Aligned", PreviewControl.MeasureMode.Aligned));
             MeasureModeBox.Items.Add(Item("Horizontal (0°)", PreviewControl.MeasureMode.Horizontal));
             MeasureModeBox.Items.Add(Item("Vertical (90°)", PreviewControl.MeasureMode.Vertical));
@@ -722,7 +723,7 @@ namespace BoltToolApp.UI
         }
 
         void OnMeasureMode(object sender, SelectionChangedEventArgs e) =>
-            Preview.Measure = TagOf(MeasureModeBox, PreviewControl.MeasureMode.Aligned);
+            Preview.Measure = TagOf(MeasureModeBox, PreviewControl.MeasureMode.Auto);
 
         /// <summary>Live update of the name preview while the custom name is typed (the job is updated on Enter / leaving the box too).</summary>
         void OnCustomNameTyped(object sender, TextChangedEventArgs e)

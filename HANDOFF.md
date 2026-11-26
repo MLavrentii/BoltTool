@@ -213,6 +213,8 @@ AssemblyId, Role
     value. Typing the standard value or emptying the box = standard (0). "Back to standard" button. Custom b is clamped to
     `MinThreadLength` (tip chamfer + 2 P) .. L (fixes the folded profile for very short threads); plain shank < 0.5 P is
     dropped. `ComputeLayout` warns when the first nut-side nut sits on the unthreaded shank.
+27. **Measure mode Auto (2026-11-26, default):** `MeasureMode.Auto` -> `AutoMode()` picks AlongAxis / AcrossAxis by the larger
+    component (= horizontal / vertical in the side view); end views fall back to screen horizontal / vertical.
 
 ## 7. Things to check next
 

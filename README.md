@@ -143,7 +143,7 @@ the holder plate and the lip are already inside the element. The grooved face al
 | Control | Meaning |
 |---|---|
 | Side, Head end, Thread end, Top, Iso SW / SE / NE / NW | Jump to a standard view |
-| Measure | How Shift+click measures: Aligned, Horizontal (0°), Vertical (90°), Along the bolt, Across the bolt (90°) |
+| Measure | How Shift+click measures: **Auto 0° / 90°** (default, like `DIMLINEAR`), Aligned, Horizontal (0°), Vertical (90°), Along the bolt, Across the bolt (90°) |
 | Snap view angles | While orbiting, the view catches on standard angles (see below) |
 | Show wipeouts | Shows the wipeout areas in the preview only |
 
@@ -203,7 +203,7 @@ not work when looking straight along the bolt (end views).
 |---|---|
 | Drag the blue ▶ at the bolt tip | Changes only the bolt length (switches an assembly to manual length) |
 | Drag the blue ▶ on the first nut-side element | Moves the whole nut side (clamp length); the bolt length follows |
-| Shift + click two points | Green dimension with arrows. The type is chosen in **Measure** under the preview: *Aligned* (straight between the points), *Horizontal (0°)* / *Vertical (90°)* (only that part, like `DIMLINEAR`), *Along the bolt* (parallel to the axis – shows the real axial distance, also in iso views, when both points lie on the bolt outline), *Across the bolt (90°)*. Other values are the **projected 2D distance** in the current view. Snaps use drawing vertices (not midpoints/centres) |
+| Shift + click two points | Green dimension with arrows. The type is chosen in **Measure** under the preview: *Auto 0° / 90°* (default – along or across the bolt, whichever is larger; in the side view that is horizontal or vertical), *Aligned* (straight between the points), *Horizontal (0°)* / *Vertical (90°)* (only that part, like `DIMLINEAR`), *Along the bolt* (parallel to the axis – shows the real axial distance, also in iso views, when both points lie on the bolt outline), *Across the bolt (90°)*. Other values are the **projected 2D distance** in the current view. Snaps use drawing vertices (not midpoints/centres) |
 | Esc | Removes the measurements and the selection |
 | Save JPG | Saves the preview exactly as shown, with its dimensions, as a JPG file |
 

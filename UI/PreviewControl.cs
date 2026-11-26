@@ -47,9 +47,10 @@ namespace BoltToolApp.UI
 
         // ---- measuring (Shift) ----
         /// <summary>Aligned = straight between the points; Horizontal / Vertical = screen 0° / 90° (like DIMLINEAR);
-        /// AlongAxis = parallel to the bolt (shows the real axial distance); AcrossAxis = 90° to the bolt.</summary>
-        public enum MeasureMode { Aligned, Horizontal, Vertical, AlongAxis, AcrossAxis }
-        MeasureMode _mode = MeasureMode.Aligned;
+        /// AlongAxis = parallel to the bolt (shows the real axial distance); AcrossAxis = 90° to the bolt.
+        /// Auto = like DIMLINEAR: along or across the bolt (= 0° / 90° in the side view), whichever is larger.</summary>
+        public enum MeasureMode { Auto, Aligned, Horizontal, Vertical, AlongAxis, AcrossAxis }
+        MeasureMode _mode = MeasureMode.Auto;
         public MeasureMode Measure { get => _mode; set { _mode = value; InvalidateVisual(); } }
         readonly List<(P2 a, P2 b, MeasureMode m)> _measures = new();
         P2? _measureFirst, _snap;
@@ -198,9 +199,20 @@ namespace BoltToolApp.UI
             }
         }
 
+        /// <summary>Auto: along or across the bolt, whichever component is larger (= horizontal / vertical in
+        /// the side view). Looking along the bolt: horizontal / vertical on the screen.</summary>
+        MeasureMode AutoMode(P2 a, P2 b)
+        {
+            double dx = b.X - a.X, dy = b.Y - a.Y;
+            if (MeasureDir(MeasureMode.AlongAxis, out double ux, out double uy, out _))
+                return Math.Abs(dx * ux + dy * uy) >= Math.Abs(-dx * uy + dy * ux) ? MeasureMode.AlongAxis : MeasureMode.AcrossAxis;
+            return Math.Abs(dx) >= Math.Abs(dy) ? MeasureMode.Horizontal : MeasureMode.Vertical;
+        }
+
         /// <summary>Green dimension between two model-2D points in the given mode.</summary>
         void DrawMeasure(DrawingContext dc, P2 ma, P2 mb, MeasureMode mode, double s, Func<P2, Point> P)
         {
+            if (mode == MeasureMode.Auto) mode = AutoMode(ma, mb);
             if (!MeasureDir(mode, out double ux, out double uy, out double f))
             {
                 Point a = P(ma), b = P(mb);
